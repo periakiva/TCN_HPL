@@ -4,10 +4,25 @@ from typing import Any, Callable, Dict, Tuple
 import os
 from glob import glob
 from omegaconf import DictConfig
-
+import yaml
 from tcn_hpl.utils import pylogger, rich_utils
 
 log = pylogger.get_pylogger(__name__)
+
+
+def load_yaml_as_dict(yaml_path: str) -> dict:
+    """
+    Load a YAML configuration file as a dictionary.
+
+    Parameters:
+        yaml_path (str): Path to the YAML file.
+
+    Returns:
+        dict: A dictionary containing the configuration settings.
+    """
+    with open(yaml_path, 'r') as f:
+        config_dict = yaml.load(f, Loader=yaml.FullLoader)
+    return config_dict
 
 def dictionary_contents(path: str, types: list, recursive: bool = False) -> list:
     """
