@@ -31,11 +31,11 @@ obj_exp_name = "coffee_base" #"coffee+tea_yolov7"
 # obj_dets_dir = f"{data_dir}/annotations/{recipe}/results/{obj_exp_name}"
 obj_dets_dir = "/data/PTG/cooking/object_anns/old_coffee/results/coffee_base/" #"/home/local/KHQ/hannah.defazio/yolov7/runs/detect/coffee+tea_yolov7/"
 
-ptg_root = "/home/local/KHQ/hannah.defazio/angel_system/"
+ptg_root = "/home/local/KHQ/peri.akiva/angel_system/"
 activity_config_path = f"{ptg_root}/config/activity_labels"
 activity_config_fn = f"{activity_config_path}/recipe_{recipe}.yaml"
 
-feat_version = 5
+feat_version = 7
 using_done = False # Set the gt according to when an activity is done
 
 #####################
