@@ -15,7 +15,7 @@ from angel_system.data.common.load_data import (
     time_from_name,
     sanitize_str,
 )
-from angel_system.activity_hmm.train_activity_classifier import (
+from angel_system.activity_classification.train_activity_classifier import (
     data_loader,
     compute_feats,
 )
@@ -25,27 +25,29 @@ from angel_system.data.data_paths import grab_data, data_dir
 #####################
 # Inputs
 #####################
-recipe = "coffee+tea"
-obj_exp_name = "coffee_base" #"coffee+tea_yolov7"
+task = "m2_tqt"
+obj_exp_name = "p_bbn_model_m2_m3_m5_r18_v10" #"coffee+tea_yolov7"
 
+
+#  f"{ptg_root}/config/activity_labels/medical"
 # obj_dets_dir = f"{data_dir}/annotations/{recipe}/results/{obj_exp_name}"
-obj_dets_dir = "/data/PTG/cooking/object_anns/old_coffee/results/coffee_base/" #"/home/local/KHQ/hannah.defazio/yolov7/runs/detect/coffee+tea_yolov7/"
+# obj_dets_dir = "/data/PTG/cooking/object_anns/old_coffee/results/coffee_base/" #"/home/local/KHQ/hannah.defazio/yolov7/runs/detect/coffee+tea_yolov7/"
+obj_dets_dir = "/home/local/KHQ/peri.akiva/projects/medical-pose/bbox_detection_results/RESULTS_m2_with_lab_cleaned_fixed_data_with_steps_results_train_activity_with_patient_dets.mscoco.json"
+ptg_root = "/home/local/KHQ/peri.akiva/angel_system"
+activity_config_path = f"{ptg_root}/config/activity_labels/medical"
+activity_config_fn = f"{activity_config_path}/task_{task}.yaml"
 
-ptg_root = "/home/local/KHQ/peri.akiva/angel_system/"
-activity_config_path = f"{ptg_root}/config/activity_labels"
-activity_config_fn = f"{activity_config_path}/recipe_{recipe}.yaml"
-
-feat_version = 7
+feat_version = 6
 using_done = False # Set the gt according to when an activity is done
 
 #####################
 # Output
 #####################
-exp_name = "coffee_only_data_test_feat_v5"#f"coffee_and_tea_feat_v{str(feat_version)}"
+exp_name = "m2_tqt_data_test_feat_v6"#f"coffee_and_tea_feat_v{str(feat_version)}"
 if using_done:
     exp_name = f"{exp_name}_done_gt"
 
-output_data_dir = f"{data_dir}/TCN_data/{recipe}/{exp_name}"
+output_data_dir = f"/data/PTG/TCN_data/m2/{exp_name}"
 
 gt_dir = f"{output_data_dir}/groundTruth"
 frames_dir = f"{output_data_dir}/frames"
