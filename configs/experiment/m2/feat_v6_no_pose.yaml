@@ -13,7 +13,7 @@ defaults:
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
-exp_name: "p_m2_tqt_data_test_feat_v6_with_pose" #[p_m2_tqt_data_test_feat_v6]
+exp_name: "p_m2_tqt_data_test_feat_v6_no_pose" #[p_m2_tqt_data_test_feat_v6]
 
 tags: ["m2", "ms_tcn"]
 
@@ -28,7 +28,7 @@ model:
   compile: false
 
   net:
-    dim: 162 # length of feature vector
+    dim: 96 # length of feature vector
 
 data:
   num_classes: 9 # activities: includes background
@@ -52,7 +52,7 @@ data:
       num_obj_classes: 12 # not including background
 
 paths:
-  data_dir: "/data/PTG/TCN_data/m2/p_m2_tqt_data_test_feat_v6_with_pose" #[p_m2_tqt_data_test_feat_v6]
+  data_dir: "/data/PTG/TCN_data/m2/p_m2_tqt_data_test_feat_v6_no_pose" #[p_m2_tqt_data_test_feat_v6]
   # root_dir: "/data/PTG/medical/training/activity_classifier/TCN_HPL"
   root_dir: "/data/users/peri.akiva/PTG/medical/training/activity_classifier/TCN_HPL"
 

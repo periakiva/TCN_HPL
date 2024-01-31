@@ -26,7 +26,7 @@ from angel_system.data.data_paths import grab_data, data_dir
 # Inputs
 #####################
 task = "m2"
-obj_exp_name = "p_bbn_model_m2_m3_m5_r18_v10" #"coffee+tea_yolov7"
+obj_exp_name = "p_bbn_model_m2_m3_m5_r18_v11" #"coffee+tea_yolov7"
 
 
 #  f"{ptg_root}/config/activity_labels/medical"
@@ -44,7 +44,14 @@ using_done = False # Set the gt according to when an activity is done
 #####################
 # Output
 #####################
-exp_name = "p_m2_tqt_data_test_feat_v6"#f"coffee_and_tea_feat_v{str(feat_version)}"
+feat_type = "no_pose" #[no_pose, with_pose, only_hands_joints, only_objects_joints]
+feat_to_bools = {
+    "no_pose": [False, False],
+    "with_pose": [True, True],
+    "only_hands_joints": [False, True],
+    "only_objects_joints": [True, False]
+}
+exp_name = f"p_m2_tqt_data_test_feat_v6_{feat_type}" #[p_m2_tqt_data_test_feat_v6_with_pose, p_m2_tqt_data_test_feat_v6_only_hands_joints, p_m2_tqt_data_test_feat_v6_only_objects_joints, p_m2_tqt_data_test_feat_v6_no_pose]
 if using_done:
     exp_name = f"{exp_name}_done_gt"
 
@@ -84,21 +91,78 @@ with open(f"{output_data_dir}/mapping.txt", "w") as mapping:
 # groundtruth and
 # bundles
 #####################
-for split in ["train_activity", "val", "test"]:
-    # kwcoco_file = f"{obj_dets_dir}/{obj_exp_name}_results_{split}_conf_0.1_plus_hl_hands_new_obj_labels.mscoco.json"
-    kwcoco_file = "/home/local/KHQ/peri.akiva/projects/medical-pose/ViTPose/results/RESULTS_m2_with_lab_cleaned_fixed_data_with_steps_results_train_activity_with_patient_dets_with_pose.mscoco.json"
-    dset = kwcoco.CocoDataset(kwcoco_file)
+### create splits dsets
 
+kwcoco_file = "/home/local/KHQ/peri.akiva/projects/medical-pose/ViTPose/results/RESULTS_m2_with_lab_cleaned_fixed_data_with_steps_results_train_activity_with_patient_dets_with_pose.mscoco.json"
+dset = kwcoco.CocoDataset(kwcoco_file)
+train_img_ids, val_img_ids, test_img_ids = [], [], []
+
+train_vidids = [1, 7, 13, 19, 21, 26, 27, 29, 30,
+            31, 32, 33, 34, 35, 36, 38, 39, 40, 52, 53,
+            57, 58, 60, 63, 64, 70, 71, 72, 73, 74, 75, 
+            76, 77] 
+
+# [1, 7, 13, 19, 21, 26, 27, 29, 30,
+#             31, 32, 33, 34, 35, 36, 38, 39, 40, 52, 53,
+#             57, 58, 60, 63, 64, 70, 71, 72, 73, 74, 75, 
+#             76, 77, 119, 122, 124,
+#             132, 133] 
+
+val_vivids = [5, 6, 24, 28, 37, 59]
+
+test_vivds= [25, 55]
+
+## individual splits by gids
+# total = len(dset.index.imgs)
+# inds = [i for i in range(1, total+1)]
+# train_size, val_size = int(0.8*total), int(0.1*total)
+# test_size = total - train_size - val_size
+# train_inds = set(list(np.random.choice(inds, size=train_size, replace=False)))
+# remaining_inds = list(set(inds) - train_inds)
+# val_inds = set(list(np.random.choice(remaining_inds, size=val_size, replace=False)))
+# test_inds = list(set(remaining_inds) - val_inds)
+# # test_inds = list(np.random.choice(remaining_inds, size=test_size, replace=False))
+
+# train_img_ids = [dset.index.imgs[i]['id'] for i in train_inds]
+# val_img_ids = [dset.index.imgs[i]['id'] for i in val_inds]
+# test_img_ids = [dset.index.imgs[i]['id'] for i in test_inds]
+# print(f"train: {len(train_inds)}, val: {len(val_inds)}, test: {len(test_inds)}")
+
+for vid in train_vidids:
+    # print(type(dset.index.vidid_to_gids[vid]))
+    # print(type(list(dset.index.vidid_to_gids[vid])))
+    # print(list(dset.index.vidid_to_gids[vid]))
+
+    train_img_ids.extend(list(dset.index.vidid_to_gids[vid]))
+
+for vid in val_vivids:
+    val_img_ids.extend(list(dset.index.vidid_to_gids[vid]))
+    # val_img_ids = set(val_img_ids) + set(dset.index.vidid_to_gids[vid])
+
+for vid in test_vivds:
+    test_img_ids.extend(list(dset.index.vidid_to_gids[vid]))
+    # test_img_ids = set(test_img_ids) + set(dset.index.vidid_to_gids[vid])
+
+train_img_ids, val_img_ids, test_img_ids = list(train_img_ids), list(val_img_ids), list(test_img_ids)
+
+train_dset = dset.subset(gids=train_img_ids, copy=True)
+val_dset = dset.subset(gids=val_img_ids, copy=True)
+test_dset = dset.subset(gids=test_img_ids, copy=True)
+# exit()
+
+
+# for split in ["train_activity", "val", "test"]:
+for dset, split in zip([train_dset, val_dset, test_dset], ["train_activity", "val", "test"]):
+    # kwcoco_file = f"{obj_dets_dir}/{obj_exp_name}_results_{split}_conf_0.1_plus_hl_hands_new_obj_labels.mscoco.json"
+
+    # print(f"dset length: {len(dset.index.imgs)}")
+    # exit()
     # print(f"kps cats: {dset.keypoint_categories()}")
     
-    for video_id in ub.ProgIter(
-        dset.index.videos.keys(), desc=f"Creating features for videos in {split}"
-    ):
+    for video_id in ub.ProgIter(dset.index.videos.keys()):
         
         # if video_id != 10:
         #     continue
-        
-        
         
         video = dset.index.videos[video_id]
         video_name = video["name"]
@@ -129,7 +193,9 @@ for split in ["train_activity", "val", "test"]:
             label_to_ind,
             act_id_to_str,
             ann_by_image,
-            feat_version=feat_version
+            feat_version=feat_version,
+            objects_joints=feat_to_bools[feat_type][0],
+            hands_joints=feat_to_bools[feat_type][1]
         )
 
         X = X.T
