@@ -44,7 +44,7 @@ using_done = False # Set the gt according to when an activity is done
 #####################
 # Output
 #####################
-feat_type = "no_pose" #[no_pose, with_pose, only_hands_joints, only_objects_joints]
+feat_type = "with_pose" #[no_pose, with_pose, only_hands_joints, only_objects_joints]
 feat_to_bools = {
     "no_pose": [False, False],
     "with_pose": [True, True],
@@ -97,10 +97,10 @@ kwcoco_file = "/home/local/KHQ/peri.akiva/projects/medical-pose/ViTPose/results/
 dset = kwcoco.CocoDataset(kwcoco_file)
 train_img_ids, val_img_ids, test_img_ids = [], [], []
 
-train_vidids = [1, 7, 13, 19, 21, 26, 27, 29, 30,
+train_vidids = [1, 7, 13, 21, 26, 27, 29, 30,
             31, 32, 33, 34, 35, 36, 38, 39, 40, 52, 53,
             57, 58, 60, 63, 64, 70, 71, 72, 73, 74, 75, 
-            76, 77] 
+            76, 55] 
 
 # [1, 7, 13, 19, 21, 26, 27, 29, 30,
 #             31, 32, 33, 34, 35, 36, 38, 39, 40, 52, 53,
@@ -108,9 +108,9 @@ train_vidids = [1, 7, 13, 19, 21, 26, 27, 29, 30,
 #             76, 77, 119, 122, 124,
 #             132, 133] 
 
-val_vivids = [5, 6, 24, 28, 37, 59]
+val_vivids = [5, 6, 24, 37, 77]
 
-test_vivds= [25, 55]
+test_vivds= [25, 19, 59, 28]
 
 ## individual splits by gids
 # total = len(dset.index.imgs)
