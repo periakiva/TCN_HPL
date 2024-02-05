@@ -3,8 +3,8 @@ _target_: tcn_hpl.models.ptg_module.PTGLitModule
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
-  lr: 0.0005
-  weight_decay: 0.0
+  lr: 0.0001
+  weight_decay: 0.0001
 
 scheduler:
   _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
@@ -15,10 +15,11 @@ scheduler:
 
 net:
   _target_: tcn_hpl.models.components.ms_tcs_net.MultiStageModel
-  num_stages: 4 
-  num_layers: 10 
+  num_stages: 2
+  num_layers: 4 
   num_f_maps: 64
-  dim: 204
+  # dim: 204
+  dim: 128
   num_classes: ${data.num_classes}
 
 criterion:

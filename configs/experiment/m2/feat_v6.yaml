@@ -21,18 +21,18 @@ seed: 12345
 
 trainer:
   min_epochs: 50
-  max_epochs: 150
+  max_epochs: 300
 
 
 model:
   compile: false
 
   net:
-    dim: 162 # length of feature vector
+    dim: 354 # length of feature vector
 
 data:
   num_classes: 9 # activities: includes background
-  batch_size: 1024
+  batch_size: 256
   num_workers: 0
   epoch_length: 20000
   window_size: 30
@@ -43,12 +43,12 @@ data:
     test_order: [] #["NormalizePixelPts"]
 
     MoveCenterPts:
-        feat_version: 5
+        feat_version: 6
         num_obj_classes: 12 # not including background
     NormalizeFromCenter:
-      feat_version: 5
+      feat_version: 6
     NormalizePixelPts:
-      feat_version: 5
+      feat_version: 6
       num_obj_classes: 12 # not including background
 
 paths:
