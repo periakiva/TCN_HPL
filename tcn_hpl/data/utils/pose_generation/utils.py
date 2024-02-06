@@ -2,12 +2,12 @@ import argparse
 import glob
 from glob import glob
 import os
-
-def get_parser():
+import yaml
+def get_parser(config_file):
     parser = argparse.ArgumentParser(description="Detectron2 demo for builtin configs")
     parser.add_argument(
         "--config-file",
-        default="/shared/niudt/Kitware/Medical-Partial-Body-Pose-Estimation/detectron2/configs/medic_pose/medic_pose.yaml",
+        default=config_file,
         metavar="FILE",
         help="path to config file",
     )
@@ -42,6 +42,11 @@ def get_parser():
         nargs=argparse.REMAINDER,
     )
     return parser
+
+def load_yaml_as_dict(yaml_path):
+    with open(yaml_path, 'r') as f:
+        config_dict = yaml.load(f, Loader=yaml.FullLoader)
+    return config_dict
 
 def dictionary_contents(path: str, types: list, recursive: bool = False) -> list:
     """

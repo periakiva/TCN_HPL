@@ -1,8 +1,13 @@
 root: /data/PTG/medical/bbn_data/Release_v0.5/v0.52/M2_Tourniquet/Data
 img_save_path: /data/users/peri.akiva/datasets/m2_tourniquet/imgs
 pose_model_config: /home/local/KHQ/peri.akiva/projects/TCN_HPL/tcn_hpl/data/utils/pose_generation/configs/ViTPose_base_medic_casualty_256x192.py
+detection_model_config: /home/local/KHQ/peri.akiva/projects/TCN_HPL/tcn_hpl/data/utils/pose_generation/configs/medic_pose.yaml
 thickness: 2
 radius: 10
 kpt-thr: 0.8
 device: cuda
 pose_model_checkpoint: /home/local/KHQ/peri.akiva/projects/TCN_HPL/tcn_hpl/data/utils/pose_generation/checkpoints/pose_model.pth
+data:
+  train: /data/PTG/medical/training/yolo_object_detector/detect/bbn_model_m2_m3_m5_r18_v9/bbn_model_m2_v9_train_activity_obj_results.mscoco.json
+  val: /data/PTG/medical/training/yolo_object_detector/detect/bbn_model_m2_m3_m5_r18_v9/bbn_model_m2_v9_val_obj_results.mscoco.json
+  test: /data/PTG/medical/training/yolo_object_detector/detect/bbn_model_m2_m3_m5_r18_v9/bbn_model_m2_v9_test_obj_results.mscoco.json

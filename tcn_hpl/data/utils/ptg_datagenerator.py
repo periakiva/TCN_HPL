@@ -21,6 +21,10 @@ from angel_system.activity_classification.train_activity_classifier import (
 )
 from angel_system.data.data_paths import grab_data, data_dir
 
+def load_yaml_as_dict(yaml_path):
+    with open(yaml_path, 'r') as f:
+        config_dict = yaml.load(f, Loader=yaml.FullLoader)
+    return config_dict
 
 #####################
 # Inputs
@@ -93,26 +97,22 @@ with open(f"{output_data_dir}/mapping.txt", "w") as mapping:
 #####################
 ### create splits dsets
 
-kwcoco_file = "/home/local/KHQ/peri.akiva/projects/medical-pose/ViTPose/results/RESULTS_m2_with_lab_cleaned_fixed_data_with_steps_results_train_activity_with_patient_dets_with_pose.mscoco.json"
-dset = kwcoco.CocoDataset(kwcoco_file)
+train_file = "/home/local/KHQ/peri.akiva/projects/medical-pose/ViTPose/results/RESULTS_m2_with_lab_cleaned_fixed_data_with_steps_results_train_activity_with_patient_dets_with_pose.mscoco.json"
+val_file = "/home/local/KHQ/peri.akiva/projects/medical-pose/ViTPose/results/RESULTS_m2_with_lab_cleaned_fixed_data_with_steps_results_train_activity_with_patient_dets_with_pose.mscoco.json"
+test_file = "/home/local/KHQ/peri.akiva/projects/medical-pose/ViTPose/results/RESULTS_m2_with_lab_cleaned_fixed_data_with_steps_results_train_activity_with_patient_dets_with_pose.mscoco.json"
+
+train_dset = kwcoco.CocoDataset(train_file)
+val_dset = kwcoco.CocoDataset(val_file)
+test_dset = kwcoco.CocoDataset(test_file)
+
+dset = kwcoco.CocoDataset.union(train_dset,val_dset,test_dset)
 train_img_ids, val_img_ids, test_img_ids = [], [], []
 
 train_vidids = [1, 7, 13, 19, 21, 30,
             31, 32, 33, 34, 35, 36, 39, 52, 53,
             57, 58, 60, 64, 70, 72, 73, 75] 
 
-
-# 1 7 13 19 21 26 27 29 30 31 32 33 34 35 36 38 39 40 
-# 52 53 57 58 60 63 64 70 71 72 73 74 75 76 77 119 122 124 132 133
-# [1, 7, 13, 19, 21, 26, 27, 29, 30,
-#             31, 32, 33, 34, 35, 36, 38, 39, 40, 52, 53,
-#             57, 58, 60, 63, 64, 70, 71, 72, 73, 74, 75, 
-#             76, 77, 119, 122, 124,
-#             132, 133] 
-# val_vivids = [72, 73, 74, 75]
-
 val_vivids = [19, 77, 74]
-# test_vivds= [63, 71, 40]
 
 
 test_vivds= [19, 77, 74]
