@@ -167,18 +167,23 @@ class PosesGenerator(object):
         self.val_dataset = self.generate_bbs_and_pose(self.val_dataset)
         self.test_dataset = self.generate_bbs_and_pose(self.test_dataset)
         
-        train_path = self.config['data']['train'][:-12] #remove .mscoco.json
-        val_path = self.config['data']['val'][:-12] #remove .mscoco.json
-        test_path = self.config['data']['test'][:-12] #remove .mscoco.json
+        train_path_name = self.config['data']['train'][:-12].split('/')[-1] #remove .mscoco.json
+        val_path_name = self.config['data']['val'][:-12].split('/')[-1] #remove .mscoco.json
+        test_path_name = self.config['data']['test'][:-12].split('/')[-1] #remove .mscoco.json
         
-        train_path_with_pose = f"{train_path}_with_dets_and_pose.mscoco.json"
-        val_path_with_pose = f"{val_path}_with_dets_and_pose.mscoco.json"
-        test_path_with_pose = f"{test_path}_with_dets_and_pose.mscoco.json"
+        train_path_with_pose = f"{self.config['data']['save_root']}/{train_path_name}_with_dets_and_pose.mscoco.json"
+        val_path_with_pose = f"{self.config['data']['save_root']}/{val_path_name}_with_dets_and_pose.mscoco.json"
+        test_path_with_pose = f"{self.config['data']['save_root']}/{test_path_name}_with_dets_and_pose.mscoco.json"
         # print(f"train_path: {train_path}")
         # print(f"train_path_with_pose: {train_path_with_pose}")
         self.train_dataset.dump(train_path_with_pose, newlines=True)
+        print(f"Saved train dataset to: {train_path_with_pose}")
+        
         self.val_dataset.dump(val_path_with_pose, newlines=True)
+        print(f"Saved val dataset to: {val_path_with_pose}")
+        
         self.test_dataset.dump(test_path_with_pose, newlines=True)
+        print(f"Saved test dataset to: {test_path_with_pose}")
         
 
 def main():

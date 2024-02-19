@@ -157,6 +157,9 @@ class PTGDataModule(LightningDataModule):
             with open(vid_list_file, "r") as train_f:
                 train_videos = train_f.read().split("\n")[:-1]
 
+            
+            # print(f"train_vids: {train_videos}")
+            # exit()
             # Load validation vidoes
             with open(vid_list_file_val, "r") as val_f:
                 val_videos = val_f.read().split("\n")[:-1]
@@ -170,6 +173,9 @@ class PTGDataModule(LightningDataModule):
                 features_path, self.hparams.sample_rate, self.hparams.window_size,
                 transform=self.train_transform
             )
+            
+            # print(f"size:{self.data_train.__len__()}")
+            # exit()
 
             self.data_val = PTG_Dataset(
                 val_videos, self.hparams.num_classes, actions_dict, gt_path,

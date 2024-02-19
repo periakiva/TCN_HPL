@@ -31,11 +31,17 @@ class MultiStageModel(nn.Module):
         )
 
     def forward(self, x, mask):
+        
+        # print(f"x: {x.shape}")
+        # print(f"mask: {mask.shape}")
+        
         out = self.stage1(x, mask)
         outputs = out.unsqueeze(0)
         for s in self.stages:
             out = s(F.softmax(out, dim=1) * mask[:, None, :], mask)
             outputs = torch.cat((outputs, out.unsqueeze(0)), dim=0)
+        
+        # print(f"outputs: {outputs.shape}")
         return outputs
 
 
@@ -52,10 +58,12 @@ class SingleStageModel(nn.Module):
         self.conv_out = nn.Conv1d(num_f_maps, num_classes, 1)
 
     def forward(self, x, mask):
+        
         out = self.conv_1x1(x)
         for layer in self.layers:
             out = layer(out, mask)
         out = self.conv_out(out) * mask[:, None, :]
+        
         return out
 
 
@@ -66,11 +74,17 @@ class DilatedResidualLayer(nn.Module):
             in_channels, out_channels, 3, padding=dilation, dilation=dilation
         )
         self.conv_1x1 = nn.Conv1d(out_channels, out_channels, 1)
-        self.dropout = nn.Dropout()
+        self.dropout = nn.Dropout(0.5)
+        self.activation = nn.LeakyReLU(0.2)
+        self.norm = nn.BatchNorm1d(out_channels)
+        self.pool = nn.MaxPool1d(kernel_size=3, stride=1)
 
     def forward(self, x, mask):
         out = F.relu(self.conv_dilated(x))
         out = self.conv_1x1(out)
+        out = self.activation(out)
+        # out = self.pool(out)
+        out = self.norm(out)
         out = self.dropout(out)
         return (x + out) * mask[:, None, :]
 

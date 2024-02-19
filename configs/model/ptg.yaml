@@ -15,9 +15,9 @@ scheduler:
 
 net:
   _target_: tcn_hpl.models.components.ms_tcs_net.MultiStageModel
-  num_stages: 2
+  num_stages: 4
   num_layers: 4 
-  num_f_maps: 64
+  num_f_maps: 128
   # dim: 204
   dim: 128
   num_classes: ${data.num_classes}
