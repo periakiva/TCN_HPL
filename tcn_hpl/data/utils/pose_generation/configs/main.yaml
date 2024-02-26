@@ -1,0 +1,19 @@
+root: /data/PTG/medical/bbn_data/Release_v0.5/v0.52/M2_Tourniquet/Data
+img_save_path: /data/users/peri.akiva/datasets/m2_tourniquet/imgs
+pose_model_config: /home/local/KHQ/peri.akiva/projects/TCN_HPL/tcn_hpl/data/utils/pose_generation/configs/ViTPose_base_medic_casualty_256x192.py
+detection_model_config: /home/local/KHQ/peri.akiva/projects/TCN_HPL/tcn_hpl/data/utils/pose_generation/configs/medic_pose.yaml
+thickness: 2
+radius: 10
+kpt-thr: 0.8
+device: cuda
+pose_model_checkpoint: /home/local/KHQ/peri.akiva/projects/TCN_HPL/tcn_hpl/data/utils/pose_generation/checkpoints/pose_model.pth
+data:
+  # train: /data/users/peri.akiva/datasets/ptg/m2_good_images_only_no_amputation_stump_train_activity_obj_results_with_dets_and_pose.mscoco.json
+  # val: /data/users/peri.akiva/datasets/ptg/m2_good_images_only_no_amputation_stump_val_obj_results_with_dets_and_pose.mscoco.json
+  # test: /data/users/peri.akiva/datasets/ptg/m2_good_images_only_no_amputation_stump_test_obj_results_with_dets_and_pose.mscoco.json
+  train: /data/PTG/medical/training/yolo_object_detector/detect/m2_good_images_only_no_amputation_stump/m2_good_images_only_no_amputation_stump_train_activity_obj_results.mscoco.json
+  val: /data/PTG/medical/training/yolo_object_detector/detect/m2_good_images_only_no_amputation_stump/m2_good_images_only_no_amputation_stump_val_obj_results.mscoco.json
+  test: /data/PTG/medical/training/yolo_object_detector/detect/m2_good_images_only_no_amputation_stump/m2_good_images_only_no_amputation_stump_test_obj_results.mscoco.json
+  save_root: /data/users/peri.akiva/datasets/ptg
+
+  

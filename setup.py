@@ -9,8 +9,8 @@ setup(
     author="",
     author_email="",
     url="https://github.com/user/project",
-    install_requires=["lightning", "hydra-core", "hydra-colorlog"],
-    packages=find_packages(),
+    # install_requires=["lightning", "hydra-core", "hydra-colorlog"],
+    packages=find_packages(include=['tcn_hpl', 'tcn_hpl.*']),
     # use this to customize global commands available in the terminal after installing the package
     entry_points={
         "console_scripts": [
