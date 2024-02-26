@@ -26,7 +26,7 @@ seed: 12345
 
 trainer:
   min_epochs: 50
-  max_epochs: 300
+  max_epochs: 500
 
 
 model:
@@ -40,7 +40,7 @@ data:
   batch_size: 512
   num_workers: 0
   epoch_length: 20000
-  window_size: 45
+  window_size: 30
   sample_rate: 1
   
   all_transforms:

@@ -51,10 +51,10 @@ using_done = False # Set the gt according to when an activity is done
 #####################
 reshuffle_datasets = True
 augment = False
-num_augs = 15
+num_augs = 5
 if augment:
     num_augs = num_augs
-    aug_trans_range, aug_rot_range = [-15, 15], [-10, 10]
+    aug_trans_range, aug_rot_range = [-5, 5], [-5, 5]
 else:
     num_augs = 1
     aug_trans_range, aug_rot_range = None, None
@@ -95,6 +95,8 @@ with open(activity_config_fn, "r") as stream:
     activity_config = yaml.safe_load(stream)
 activity_labels = activity_config["labels"]
 
+print(f"activity labels: {activity_labels}")
+
 with open(f"{output_data_dir}/mapping.txt", "w") as mapping:
     for label in activity_labels:
         i = label["id"]
@@ -110,13 +112,13 @@ with open(f"{output_data_dir}/mapping.txt", "w") as mapping:
 #####################
 ### create splits dsets
 
-vidids_black_gloves = [22,23,26,24,25,27,29,28,41,42,43,44,45,46,47,48,49,78,
+names_black_gloves = [22,23,26,24,25,27,29,28,41,42,43,44,45,46,47,48,49,78,
                        79,84,88,90,80,81,82,83,85,86,87,89,91,99,110,111,121,113,115,116]
-vidids_blue_gloves = [132,133,50,51,54,55,56,52,61,59,53,57,62,65,66,67,68,69,
+names_blue_gloves = [132,133,50,51,54,55,56,52,61,59,53,57,62,65,66,67,68,69,
                       58,60,63,64,125,126,127,129,131,134,135,136,128,130,137,
                       138,139]
 
-filter_black_gloves, filter_blue_gloves = True, True
+filter_black_gloves, filter_blue_gloves = False, False
 
 train_file = "/data/users/peri.akiva/datasets/ptg/m2_good_images_only_no_amputation_stump_train_activity_obj_results_with_dets_and_pose.mscoco.json"
 val_file = "/data/users/peri.akiva/datasets/ptg/m2_good_images_only_no_amputation_stump_val_obj_results_with_dets_and_pose.mscoco.json"
@@ -131,27 +133,37 @@ test_dset = kwcoco.CocoDataset(test_file)
 
 if reshuffle_datasets:
     dset = kwcoco.CocoDataset.union(train_dset,val_dset,test_dset)
+    
+    print(f"vids: {dset.index.videos}")
+    
     train_img_ids, val_img_ids, test_img_ids = [], [], []
 
-    train_vidids = [1, 2, 4, 8, 9, 10, 11, 12, 16, 17,18, 20, 13, 19, 21, 30, 31, 32, 33, 34,35,36,38,
-                    39,40,7,132,133,50,51,54,56,52,61,53,57,65,66,67,68,69,58,60,63,64,125,126,
-                    127,129,131,134,135,136,119,122,124,70,71,72,92,93,94,95,97,98,100,
-                    101,102,103,104,105,107,108,112,114,117,118,73,120,123,75,76,77]
+    train_names = [1, 2, 4, 8, 9, 10, 11, 12, 16, 17,18, 20, 19, 30, 31, 32, 33, 34,35,36,
+                    7,132,133,50,51,54,56,52,61,53,57,65,66,67,68,69,58,60,63,64,125,126,
+                    127,129,131,134,135,136,119,122,124,70,72,92,93,94,95,97,98,100,
+                    101,102,103,104,105,107,108,112,114,117,118,73]
     
-
-    val_vivids= [5,6,37,59,106,130,138]
+    # bad step distribution GT: [37, 6, 76, 39, 38, 30]
+    val_names= [5, 59,106,130,138, 77, 123, 71]
     
-    test_vivds= [5,6,37,59,106,130,138]
+    # test_vivds= [5,6,37,59,106,130,138]
     
-    # test_vivds = [3,14,55,62,96,109,128,137,139]
+    test_names = [3,14,55,62,96,109,128,137,139, 120, 75, 21, 13]
+    
+    train_vidids = [dset.index.name_to_video[f"M2-{index}"]['id'] for index in train_names if f"M2-{index}" in dset.index.name_to_video.keys()]
+    val_vivids = [dset.index.name_to_video[f"M2-{index}"]['id'] for index in val_names if f"M2-{index}" in dset.index.name_to_video.keys()]
+    test_vivds = [dset.index.name_to_video[f"M2-{index}"]['id'] for index in test_names if f"M2-{index}" in dset.index.name_to_video.keys()]
     
     if filter_black_gloves:
+        vidids_black_gloves = [dset.index.name_to_video[f"M2-{index}"]['id'] for index in names_black_gloves if f"M2-{index}" in dset.index.name_to_video.keys()]
+        
         train_vidids = [x for x in train_vidids if x not in vidids_black_gloves]
         val_vivids = [x for x in val_vivids if x not in vidids_black_gloves]
         test_vivds = [x for x in test_vivds if x not in vidids_black_gloves]
         
-
     if filter_blue_gloves:
+        vidids_blue_gloves = [dset.index.name_to_video[f"M2-{index}"]['id'] for index in names_blue_gloves if f"M2-{index}" in dset.index.name_to_video.keys()]        
+        
         train_vidids = [x for x in train_vidids if x not in vidids_blue_gloves]
         val_vivids = [x for x in val_vivids if x not in vidids_blue_gloves]
         test_vivds = [x for x in test_vivds if x not in vidids_blue_gloves]
@@ -179,17 +191,23 @@ if reshuffle_datasets:
         # print(list(dset.index.vidid_to_gids[vid]))
         if vid in dset.index.vidid_to_gids.keys():
             train_img_ids.extend(list(dset.index.vidid_to_gids[vid]))
+        else:
+            print(f"{vid} not in the train dataset")
 
     for vid in val_vivids:
         
         if vid in dset.index.vidid_to_gids.keys():
             val_img_ids.extend(list(dset.index.vidid_to_gids[vid]))
+        else:
+            print(f"{vid} not in the val dataset")
         # val_img_ids = set(val_img_ids) + set(dset.index.vidid_to_gids[vid])
 
     for vid in test_vivds:
         
         if vid in dset.index.vidid_to_gids.keys():
             test_img_ids.extend(list(dset.index.vidid_to_gids[vid]))
+        else:
+            print(f"{vid} not in the test dataset")
         # test_img_ids = set(test_img_ids) + set(dset.index.vidid_to_gids[vid])
 
 

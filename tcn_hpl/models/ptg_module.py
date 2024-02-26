@@ -66,6 +66,7 @@ class PTGLitModule(LightningModule):
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
         smoothing_loss: float,
+        use_smoothing_loss: bool,
         data_dir: str,
         num_classes: int,
         compile: bool,
@@ -116,6 +117,8 @@ class PTGLitModule(LightningModule):
 
         # for tracking best so far validation accuracy
         self.val_acc_best = MaxMetric()
+        # self.val_acc_best = 0
+        self.train_acc_best = MaxMetric()
 
         self.validation_step_outputs_prob = []
         self.validation_step_outputs_pred = []
@@ -133,6 +136,48 @@ class PTGLitModule(LightningModule):
         self.val_frames = None
         self.test_frames = None
 
+    
+    def plot_gt_vs_preds(self, per_video_frame_gt_preds, split='train', max_items=30):
+        # fig = plt.figure(figsize=(10,15))
+        
+        for index, video in enumerate(per_video_frame_gt_preds.keys()):
+            
+            if index >= max_items:
+                return
+            
+            fig, ax = plt.subplots(figsize=(15, 8))
+            video_gt_preds = per_video_frame_gt_preds[video]
+            frame_inds = sorted(list(video_gt_preds.keys()))
+            preds, gt, inds = [], [], []
+            for ind in frame_inds:
+                inds.append(int(ind))
+                gt.append(int(video_gt_preds[ind][0]))
+                preds.append(int(video_gt_preds[ind][1]))
+            
+            
+            # plt.plot(gt, label="gt")
+            # plt.plot(preds, label="preds")
+            
+            # sns.barplot(x=inds, y=gt, linestyle='dotted', color='magenta', label='GT', ax=ax)
+            # ax.stackplot(inds, gt, alpha=0.5, labels=['GT'], color=['magenta'])
+            sns.lineplot(x=inds, y=preds, linestyle='dotted', color='blue', linewidth=1, label='Pred', ax=ax).set(title=f'{split} Step Prediction Per Frame', xlabel='Index', ylabel='Step')
+            sns.lineplot(x=inds, y=gt, color='magenta', label='GT', ax=ax, linewidth=3)
+
+            
+            # ax.xaxis.label.set_visible(False)
+            # ax.spines['bottom'].set_visible(False)
+            ax.legend()
+            # /confusion_mat_val.png"
+            # title = f"plot_pred_vs_gt_vid{video}.png" Path(folder).mkdir(parents=True, exist_ok=True)
+            # fig.savefig(f"{self.hparams.output_dir}/{title}")
+            root_dir = f"{self.hparams.output_dir}/steps_vs_preds"
+            
+            if not os.path.exists(root_dir):
+                os.makedirs(root_dir)
+                
+            fig.savefig(f"{root_dir}/{split}_{video}.png", pad_inches=5)
+            plt.close()
+    
     def forward(self, x: torch.Tensor, m: torch.Tensor) -> torch.Tensor:
         """Perform a forward pass through the model `self.net`.
 
@@ -150,6 +195,9 @@ class PTGLitModule(LightningModule):
         self.val_loss.reset()
         self.val_acc.reset()
         self.val_acc_best.reset()
+        # self.train_loss.reset()
+        # self.train_acc.reset()
+        # self.train_acc_best.reset()
 
     def compute_loss(self, p, y, mask):
         """Compute the total loss for a batch
@@ -171,57 +219,64 @@ class PTGLitModule(LightningModule):
         loss = torch.zeros((1)).to(p[0])
         
         # print(f"loss: {loss.shape}")
-        # print(f"p loss: {p.transpose(2, 1).contiguous().view(-1, self.hparams.num_classes)}")
+        # print(f"p loss: {p[:,:,-1].shape}")
         # print(f"y: {y.view(-1).shape}")
 
         # p = einops.rearrange(p, 'b c w -> (b w) c')
         # print(f"prediction: {p.shape}, GT: {y.shape}")
         # print(f"prediction: {p}, GT: {y}"), # [bs, num_classes, window_size]
         
-        loss += self.criterion(
-            p.transpose(2, 1).contiguous().view(-1, self.hparams.num_classes),
-            y.view(-1),
-        )
+        # TODO: Use only last frame per window
         
         # loss += self.criterion(
-        #     p,
+        #     p.transpose(2, 1).contiguous().view(-1, self.hparams.num_classes),
         #     y.view(-1),
         # )
+        
+        loss += self.criterion(
+            p[:,:,-1],
+            y[:,-1],
+        )
 
         # need to penalize high volatility of predictions within a window
-        # p_logsoft = F.log_softmax(p, dim=1)
-        # print(f"p_logsoft: {p_logsoft.shape}")
-        print(f"probs: {probs.shape}")
-        print(f"preds: {preds.shape}")
-        print(f"preds: {preds[0,:]}")
-        std, mean = torch.std_mean(preds, dim=-1)
-        mode = torch.mode(preds, dim=-1)
         
-        eps = 1e10
+        # std, mean = torch.std_mean(preds, dim=-1)
+        mode, _ = torch.mode(y, dim=-1)
+        mode = einops.repeat(mode, 'b -> b c', c=preds.shape[-1])
+        # print(f"mode: {mode.shape}")
+        # print(f"preds: {preds.shape}")
+        # print(f"mode: {mode[0,:]}")
+        # eps = 1e10
         # variation_coef = std/(mean+eps)
-        variation_coef = torch.zeros_like(mode)
-        
-        # variation_coef = 0
-        # for pred in preds:
-        #     variation_coef += pred-mode
-        # print(f"variation_coef: {variation_coef.shape}")
-        print(f"variation_coef: {variation_coef}")
+        # variation_coef = torch.zeros_like(mode)
+        variation_coef = torch.abs(preds - mode)
+        variation_coef = torch.sum(variation_coef, dim=-1)
+        gt_variation_coef = torch.zeros_like(variation_coef)
+        # print(f"variation_coef: {variation_coef[0]}")
         # print(f"variation_coef mean: {variation_coef.mean()}")
         # print(f"p: {p.shape}")
         # print(f"p[:, :, 1:]: {p[0, 0, 1:]}")
         # print(f"F.log_softmax(p[:, :, 1:], dim=1): {F.log_softmax(p[:, :, 1:], dim=1)}")
         
-        # loss += self.hparams.smoothing_loss * torch.mean(
-            # torch.clamp(
-                # self.mse(
-                #     F.log_softmax(p[:, :, 1:], dim=1),
-                #     F.log_softmax(p.detach()[:, :, :-1], dim=1),
-                # ),
-            #     min=0,
-            #     max=16,
-            # )
-        #     * mask[:, None, 1:]
-        # )
+        if self.hparams.use_smoothing_loss:
+            loss += self.hparams.smoothing_loss * torch.mean(
+                    self.mse(
+                        variation_coef,
+                        gt_variation_coef,
+                        ),
+            )
+        
+        loss += self.hparams.smoothing_loss * torch.mean(
+            torch.clamp(
+                self.mse(
+                    F.log_softmax(p[:, :, 1:], dim=1),
+                    F.log_softmax(p.detach()[:, :, :-1], dim=1),
+                ),
+                min=0,
+                max=16,
+            )
+            * mask[:, None, 1:]
+        )
 
         return loss
 
@@ -246,7 +301,7 @@ class PTGLitModule(LightningModule):
         # source_vid shape: (batch size, window)
         x = x.transpose(2, 1) # shape (batch size, feat dim, window)
         logits = self.forward(x, m) # shape (4, batch size, self.hparams.num_classes, window))
-        print(f"logits: {logits.shape}")
+        # print(f"logits: {logits.shape}")
         loss = torch.zeros((1)).to(x)
         for p in logits:
             loss += self.compute_loss(p, y, m)
@@ -290,6 +345,9 @@ class PTGLitModule(LightningModule):
 
     def on_train_epoch_end(self) -> None:
         "Lightning hook that is called when a training epoch ends."
+        
+        # acc = self.train_acc.compute()  # get current val acc
+        # self.train_acc_best(acc)  # update best so far val acc
         
         all_targets = torch.concat(self.training_step_outputs_target) # shape: #frames
         all_preds = torch.concat(self.training_step_outputs_pred) # shape: #frames
@@ -378,18 +436,45 @@ class PTGLitModule(LightningModule):
             labels.
         :param batch_idx: The index of the current batch.
         """
+        _, _, mask, _, _ = batch 
         loss, probs, preds, targets, source_vid, source_frame = self.model_step(batch)
         # update and log metrics
         self.val_loss(loss)
-        self.val_acc(preds, targets[:,-1])
+        
+        # print(f"preds: {preds.shape}, targets: {targets.shape}")
+        # print(f"mask: {mask.shape}, {mask[0,:]}")
+        ys = targets[:,-1]
+        # print(f"y: {ys.shape}")
+        # print(f"y: {ys}")
+        windowed_preds, windowed_ys = [], []
+        window_size = 45
+        center = 22
+        inds = []
+        for i in range(preds.shape[0] - window_size + 1):
+            y = ys[i:i+window_size].tolist()
+            # print(f"y: {y}")
+            # print(f"len of set: {len(list(set(y)))}")
+            if len(list(set(y))) == 1:
+                inds.append(i+center-1)
+                windowed_preds.append(preds[i+center-1])
+                windowed_ys.append(ys[i+center-1])
+            
+        
+        windowed_preds = torch.tensor(windowed_preds).to(targets)
+        windowed_ys = torch.tensor(windowed_ys).to(targets)
+        
+        # print(f"preds: {preds.shape}, targets: {targets.shape}")
+        # print(f"windowed_preds: {windowed_preds.shape}, windowed_ys: {windowed_ys.shape}")
+        
+        self.val_acc(windowed_preds, windowed_ys)
         self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
 
-        self.validation_step_outputs_target.append(targets[:,-1])
-        self.validation_step_outputs_source_vid.append(source_vid[:,-1])
-        self.validation_step_outputs_source_frame.append(source_frame[:,-1])
-        self.validation_step_outputs_pred.append(preds)
-        self.validation_step_outputs_prob.append(probs)
+        self.validation_step_outputs_target.append(targets[inds,-1])
+        self.validation_step_outputs_source_vid.append(source_vid[inds,-1])
+        self.validation_step_outputs_source_frame.append(source_frame[inds,-1])
+        self.validation_step_outputs_pred.append(preds[inds])
+        self.validation_step_outputs_prob.append(probs[inds])
 
     
     # def plot_gt_vs_activations(self, step_gts, fname_suffix=None):
@@ -413,66 +498,17 @@ class PTGLitModule(LightningModule):
     #     fig.savefig(f"./outputs/{title}") # TODO: output this wherever you want
     #     plt.close()
     
-    def plot_gt_vs_preds(self, per_video_frame_gt_preds, split='train'):
-        # fig = plt.figure(figsize=(10,15))
-        for video in per_video_frame_gt_preds.keys():
-            fig, ax = plt.subplots(figsize=(15, 8))
-            video_gt_preds = per_video_frame_gt_preds[video]
-            frame_inds = sorted(list(video_gt_preds.keys()))
-            preds, gt, inds = [], [], []
-            for ind in frame_inds:
-                inds.append(int(ind))
-                gt.append(int(video_gt_preds[ind][0]))
-                preds.append(int(video_gt_preds[ind][1]))
-            
-            
-            # plt.plot(gt, label="gt")
-            # plt.plot(preds, label="preds")
-            
-            # sns.barplot(x=inds, y=gt, linestyle='dotted', color='magenta', label='GT', ax=ax)
-            # ax.stackplot(inds, gt, alpha=0.5, labels=['GT'], color=['magenta'])
-            sns.lineplot(x=inds, y=preds, linestyle='dotted', color='blue', linewidth=1, label='Pred', ax=ax).set(title=f'{split} Step Prediction Per Frame', xlabel='Index', ylabel='Step')
-            sns.lineplot(x=inds, y=gt, color='magenta', label='GT', ax=ax, linewidth=3)
 
-            
-            # ax.xaxis.label.set_visible(False)
-            # ax.spines['bottom'].set_visible(False)
-            ax.legend()
-            # /confusion_mat_val.png"
-            # title = f"plot_pred_vs_gt_vid{video}.png" Path(folder).mkdir(parents=True, exist_ok=True)
-            # fig.savefig(f"{self.hparams.output_dir}/{title}")
-            root_dir = f"{self.hparams.output_dir}/steps_vs_preds"
-            
-            if not os.path.exists(root_dir):
-                os.makedirs(root_dir)
-                
-            fig.savefig(f"{root_dir}/{split}_{video}.png", pad_inches=5)
-            plt.close()
-        # sns.set(font_scale=1)
-    #     step_gts = [float(i) for i in step_gts]
-    #     plt.plot(step_gts, label="gt")
-    #     starting_zero_value = 0
-    #     for i in range(len(self.avg_probs)): #TODO - swap len(self.avg_probs) with the number of activities you're tracking
-    #         starting_zero_value -= 2
-    #         plot_line = np.asarray(self.activity_conf_history)[:, i]. #TODO: this 1D array is the activity confidences for one activity class i.
-    #         plt.plot(2 * plot_line + starting_zero_value, label=f"act_preds[{i}]")
-
-    #     plt.legend()
-    #     if not fname_suffix:
-    #         fname_suffix = f"vid{vid_id}"
-    #     recipe_type = foo # TODO: fill with the task name
-    #     title = f"plot_pred_vs_gt_{recipe_type}_{fname_suffix}.png"
-    #     plt.title(title)
-    #     fig.savefig(f"./outputs/{title}") # TODO: output this wherever you want
-    #     plt.close()
     
     def on_validation_epoch_end(self) -> None:
         "Lightning hook that is called when a validation epoch ends."
         acc = self.val_acc.compute()  # get current val acc
-        self.val_acc_best(acc)  # update best so far val acc
+        
+        if self.current_epoch >= 15:
+            self.val_acc_best(acc)  # update best so far val acc
         # log `val_acc_best` as a value through `.compute()` method, instead of as a metric object
         # otherwise metric would be reset by lightning after each epoch
-        self.log("val/acc_best", self.val_acc_best.compute(), sync_dist=True, prog_bar=True)
+            self.log("val/acc_best", self.val_acc_best.compute(), sync_dist=True, prog_bar=True)
 
         all_targets = torch.concat(self.validation_step_outputs_target) # shape: #frames
         all_preds = torch.concat(self.validation_step_outputs_pred) # shape: #frames
@@ -664,7 +700,7 @@ class PTGLitModule(LightningModule):
         ax.xaxis.set_ticklabels(self.classes, rotation=25)
         ax.yaxis.set_ticklabels(self.classes, rotation=0)
 
-        fig.savefig(f"{self.hparams.output_dir}/confusion_mat_test.png", pad_inches=5)
+        fig.savefig(f"{self.hparams.output_dir}/confusion_mat_test_acc_{self.test_acc.compute():0.2f}.png", pad_inches=5)
 
         self.logger.experiment.track(Image(fig), name=f'CM Test Epoch')
 

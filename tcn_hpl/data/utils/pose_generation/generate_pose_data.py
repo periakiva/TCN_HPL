@@ -142,8 +142,15 @@ class PosesGenerator(object):
                                                                                     dataset=self.pose_dataset,
                                                                                     dataset_info=self.pose_dataset_info,
                                                                                     return_heatmap=None,
-                                                                                    outputs=None)
+                                                                                    outputs=['backbone'])
                     
+                    # print(f"outputs: {type(returned_outputs[0])}")
+                    # print(f"outputs: {len(returned_outputs)}")
+                    # print(f"outputs: {returned_outputs[0]}")
+                    image_features = returned_outputs[0]['backbone'][0,:,:,-1]
+                    
+                    # print(f"image_features: {image_features.shape}")
+                    # exit()
                     pose_keypoints = pose_results[0]['keypoints'].tolist()
                     # bbox = pose_results[0]['bbox'].tolist()
                     pose_keypoints_list = []
@@ -154,6 +161,7 @@ class PosesGenerator(object):
                         pose_keypoints_list.append(kp_dict)
                     
                     current_ann['keypoints'] = pose_keypoints_list
+                    current_ann['image_features'] = image_features
                     
                     dset.add_annotation(**current_ann)
                     
