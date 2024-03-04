@@ -30,7 +30,14 @@ def load_yaml_as_dict(yaml_path):
 #####################
 # Inputs
 #####################
+
 task = "m2"
+config_path = f"/home/local/KHQ/peri.akiva/projects/TCN_HPL/configs/experiment/{task}/feat_v6.yaml"
+# config_path = 
+config = load_yaml_as_dict(config_path)
+
+print(f"config: {config}")
+exit()
 obj_exp_name = "p_bbn_model_m2_m3_m5_r18_v11" #"coffee+tea_yolov7"
 
 
