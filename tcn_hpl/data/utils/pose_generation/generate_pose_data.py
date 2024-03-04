@@ -67,6 +67,7 @@ class PosesGenerator(object):
                     ]
     
         self.keypoints_cats_dset = [{'name': value, 'id': index} for index, value in enumerate(self.keypoints_cats)]
+
         # self.train_dataset.dataset['keypoint_categories'] = self.keypoints_cats_dset
         # self.val_dataset.dataset['keypoint_categories'] = self.keypoints_cats_dset
         # self.test_dataset.dataset['keypoint_categories'] = self.keypoints_cats_dset
@@ -213,6 +214,7 @@ class PosesGenerator(object):
         
         self.dataset.dump(dataset_path_with_pose, newlines=True)
         print(f"Saved test dataset to: {dataset_path_with_pose}")
+
         
 
 def main():
