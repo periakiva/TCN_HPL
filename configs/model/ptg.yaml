@@ -3,7 +3,7 @@ _target_: tcn_hpl.models.ptg_module.PTGLitModule
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
-  lr: 0.00001
+  lr: 0.0001
   weight_decay: 0.0001
 
 scheduler:
@@ -27,15 +27,16 @@ criterion:
   _target_: tcn_hpl.models.components.focal_loss.FocalLoss
   alpha: 0.25 # 0.25
   gamma: 1
-  # weight: None 
-  weight: [1, 1, 1, 1, 1, 0.75, 0.75, 1, 1]
+  weight: None 
+  # weight: [1, 1, 1, 1, 1, 0.75, 0.75, 1, 1]
+  # weight: [1, 1, 1, 1, 1, 1]
   reduction: "mean"
 
 data_dir: ${paths.data_dir}
 
 # Smoothing loss weight
 smoothing_loss: 0.0015
-use_smoothing_loss: True
+use_smoothing_loss: False
 
 # Number of classes
 num_classes: ${data.num_classes}

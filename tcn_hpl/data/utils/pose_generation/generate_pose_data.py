@@ -123,54 +123,74 @@ class PosesGenerator(object):
             # print(f"file name: {file_name}")
             # print(f"file path: {path}")
             # print(f"video name: {video_name}")
+            # print(f"boxes: {boxes.shape}")
+            # print(f"classes: {classes}")
             
             if boxes is not None:
                 
                 # person_results = []
                 for box_id, _bbox in enumerate(boxes):
-
+                    
+                    box_class = classes[box_id]
+                    if box_class == 0:
+                        pred_class = patient_cid
+                        pred_label = 'patient'
+                    elif box_class == 1:
+                        pred_class = user_cid
+                        pred_label = 'user'
+                        
                     current_ann = {}
                     # current_ann['id'] = ann_id
                     current_ann['image_id'] = img_id
                     current_ann['bbox'] = np.asarray(_bbox).tolist()#_bbox
-                    current_ann['category_id'] = patient_cid
-                    current_ann['label'] = 'patient'
+                    current_ann['category_id'] = pred_class
+                    current_ann['label'] = pred_label
                     current_ann['bbox_score'] = str(round(scores[box_id] * 100,2)) + '%'
                     
+                    # print(f"box: {np.asarray(_bbox).tolist()}")
                     
-                    person_results = [current_ann]
-                    
-                    pose_results, returned_outputs = inference_top_down_pose_model(
-                                                                                    self.pose_model,
-                                                                                    path,
-                                                                                    person_results,
-                                                                                    bbox_thr=None,
-                                                                                    format='xyxy',
-                                                                                    dataset=self.pose_dataset,
-                                                                                    dataset_info=self.pose_dataset_info,
-                                                                                    return_heatmap=None,
-                                                                                    outputs=['backbone'])
-                    
-                    # print(f"outputs: {type(returned_outputs[0])}")
-                    # print(f"outputs: {len(returned_outputs)}")
-                    # print(f"outputs: {returned_outputs[0]}")
-                    image_features = returned_outputs[0]['backbone'][0,:,:,-1]
-                    
-                    # print(f"image_features: {image_features.shape}")
-                    # exit()
-                    pose_keypoints = pose_results[0]['keypoints'].tolist()
-                    # bbox = pose_results[0]['bbox'].tolist()
-                    pose_keypoints_list = []
-                    for kp_index, keypoint in enumerate(pose_keypoints):
-                        kp_dict = {'xy': [keypoint[0], keypoint[1]], 
-                                'keypoint_category_id': kp_index, 
-                                'keypoint_category': self.keypoints_cats[kp_index]}
-                        pose_keypoints_list.append(kp_dict)
-                    
-                    current_ann['keypoints'] = pose_keypoints_list
-                    # current_ann['image_features'] = image_features
+                    if box_class == 0:
+                        person_results = [current_ann]
+                        
+                        pose_results, returned_outputs = inference_top_down_pose_model(
+                                                                                        self.pose_model,
+                                                                                        path,
+                                                                                        person_results,
+                                                                                        bbox_thr=None,
+                                                                                        format='xyxy',
+                                                                                        dataset=self.pose_dataset,
+                                                                                        dataset_info=self.pose_dataset_info,
+                                                                                        return_heatmap=None,
+                                                                                        outputs=['backbone'])
+                        
+                        # print(f"outputs: {type(returned_outputs[0])}")
+                        # print(f"outputs: {len(returned_outputs)}")
+                        # print(f"outputs: {returned_outputs[0]}")
+                        # image_features = returned_outputs[0]['backbone'][0,:,:,-1]
+                        
+                        # print(f"image_features: {image_features.shape}")
+                        # exit()
+                        pose_keypoints = pose_results[0]['keypoints'].tolist()
+                        # bbox = pose_results[0]['bbox'].tolist()
+                        pose_keypoints_list = []
+                        for kp_index, keypoint in enumerate(pose_keypoints):
+                            kp_dict = {'xy': [keypoint[0], keypoint[1]], 
+                                    'keypoint_category_id': kp_index, 
+                                    'keypoint_category': self.keypoints_cats[kp_index]}
+                            pose_keypoints_list.append(kp_dict)
+                        
+                        # print(f"pose_keypoints_list: {pose_keypoints_list}")
+                        current_ann['keypoints'] = pose_keypoints_list
+                        # current_ann['image_features'] = image_features
                     
                     dset.add_annotation(**current_ann)
+            
+            # import matplotlib.pyplot as plt
+            # image_show = dset.draw_image(gid=img_id)
+            # plt.imshow(image_show)
+            # plt.savefig(f"myfig_{self.config['task']}_{index}.png")
+            # if index >= 20:
+            #     exit()
             
             if save_intermediate:
                 if (index % 45000) == 0:

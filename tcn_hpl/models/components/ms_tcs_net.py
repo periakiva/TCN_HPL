@@ -22,6 +22,7 @@ class MultiStageModel(nn.Module):
         """
         super(MultiStageModel, self).__init__()
         self.stage1 = SingleStageModel(num_layers, num_f_maps, dim, num_classes)
+        print(f"num classes: {num_classes}")
         self.stages = nn.ModuleList(
             [
                 copy.deepcopy(
