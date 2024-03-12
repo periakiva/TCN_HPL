@@ -228,15 +228,15 @@ class PTGLitModule(LightningModule):
         
         # TODO: Use only last frame per window
         
-        # loss += self.criterion(
-        #     p.transpose(2, 1).contiguous().view(-1, self.hparams.num_classes),
-        #     y.view(-1),
-        # )
-        
         loss += self.criterion(
-            p[:,:,-1],
-            y[:,-1],
+            p.transpose(2, 1).contiguous().view(-1, self.hparams.num_classes),
+            y.view(-1),
         )
+        
+        # loss += self.criterion(
+        #     p[:,:,-1],
+        #     y[:,-1],
+        # )
 
         # need to penalize high volatility of predictions within a window
         
@@ -355,6 +355,8 @@ class PTGLitModule(LightningModule):
         all_source_vids = torch.concat(self.training_step_outputs_source_vid)
         all_source_frames = torch.concat(self.training_step_outputs_source_frame)
         
+        # print(f"Training Per class occurences in GT: {torch.unique(all_targets, return_counts=True)}")
+        
         if self.train_frames is None:
             self.train_frames = {}
             vid_list_file_train = f"{self.hparams.data_dir}/splits/train_activity.split1.bundle"
@@ -379,10 +381,12 @@ class PTGLitModule(LightningModule):
                 per_video_frame_gt_preds[video_name] = {}
 
             frame = self.train_frames[video_name][int(source_frame)]
-            frame_idx, time = time_from_name(frame)
-
+            # frame_idx, time = time_from_name(frame)
+            frame_idx = int(frame.split('/')[-1].split('.')[0].split('_')[-1])
             per_video_frame_gt_preds[video_name][frame_idx] = (int(gt), int(pred))
             
+            
+            # print(f"video name: {video_name}, frame index: {frame_idx}, gt: {gt}, pred: {pred}")
             # dset.add_image(
             #     file_name=frame,
             #     video_id=vid,
@@ -447,8 +451,8 @@ class PTGLitModule(LightningModule):
         # print(f"y: {ys.shape}")
         # print(f"y: {ys}")
         windowed_preds, windowed_ys = [], []
-        window_size = 45
-        center = 22
+        window_size = 15
+        center = 7
         inds = []
         for i in range(preds.shape[0] - window_size + 1):
             y = ys[i:i+window_size].tolist()
@@ -466,7 +470,8 @@ class PTGLitModule(LightningModule):
         # print(f"preds: {preds.shape}, targets: {targets.shape}")
         # print(f"windowed_preds: {windowed_preds.shape}, windowed_ys: {windowed_ys.shape}")
         
-        self.val_acc(windowed_preds, windowed_ys)
+        # self.val_acc(windowed_preds, windowed_ys)
+        self.val_acc(preds, targets[:,-1])
         self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
 
@@ -508,7 +513,12 @@ class PTGLitModule(LightningModule):
             self.val_acc_best(acc)  # update best so far val acc
         # log `val_acc_best` as a value through `.compute()` method, instead of as a metric object
         # otherwise metric would be reset by lightning after each epoch
-            self.log("val/acc_best", self.val_acc_best.compute(), sync_dist=True, prog_bar=True)
+            best_val_acc = self.val_acc_best.compute()
+            self.log("val/acc_best", best_val_acc, sync_dist=True, prog_bar=True)
+
+        # import collections
+        # counter = collections.Counter(self.validation_step_outputs_target)
+
 
         all_targets = torch.concat(self.validation_step_outputs_target) # shape: #frames
         all_preds = torch.concat(self.validation_step_outputs_pred) # shape: #frames
@@ -516,6 +526,8 @@ class PTGLitModule(LightningModule):
         all_source_vids = torch.concat(self.validation_step_outputs_source_vid)
         all_source_frames = torch.concat(self.validation_step_outputs_source_frame)
 
+        # print(f"Per class occurences in GT: {torch.unique(all_targets, return_counts=True)}")
+        
         # Load val vidoes
         if self.val_frames is None:
             self.val_frames = {}
@@ -552,9 +564,14 @@ class PTGLitModule(LightningModule):
             vid = video_lookup[video_name]["id"] if video_name in video_lookup else dset.add_video(name=video_name)
 
             frame = self.val_frames[video_name][int(source_frame)]
-            frame_idx, time = time_from_name(frame)
+            
+            frame_idx = int(frame.split('/')[-1].split('.')[0].split('_')[-1])
+            # print(f"frame: {frame}, frame index: {frame_idx}")
+            # frame_idx, time = time_from_name(frame)
 
             per_video_frame_gt_preds[video_name][frame_idx] = (int(gt), int(pred))
+            
+            # print(f"video name: {video_name}, frame index: {frame_idx}, gt: {gt}, pred: {pred}")
             
             dset.add_image(
                 file_name=frame,
@@ -585,13 +602,15 @@ class PTGLitModule(LightningModule):
         # labels, title and ticks
         ax.set_xlabel('Predicted labels')
         ax.set_ylabel('True labels')
-        ax.set_title(f'CM Validation Epoch {self.current_epoch}')
+        ax.set_title(f'CM Validation Epoch {self.current_epoch}, Accuracy: {acc:.4f}')
         ax.xaxis.set_ticklabels(self.classes, rotation=25)
         ax.yaxis.set_ticklabels(self.classes, rotation=0)
 
         self.logger.experiment.track(Image(fig), name=f'CM Validation Epoch')
-
-        fig.savefig(f"{self.hparams.output_dir}/confusion_mat_val.png", pad_inches=5)
+        
+        if self.current_epoch >= 15:
+            if acc >= best_val_acc:
+                fig.savefig(f"{self.hparams.output_dir}/confusion_mat_val_acc_{acc:.4f}.png", pad_inches=5)
         
         plt.close(fig)
 
@@ -664,7 +683,8 @@ class PTGLitModule(LightningModule):
             vid = video_lookup[video_name]["id"] if video_name in video_lookup else dset.add_video(name=video_name)
 
             frame = self.test_frames[video_name][int(source_frame)]
-            frame_idx, time = time_from_name(frame)
+            frame_idx = int(frame.split('/')[-1].split('.')[0].split('_')[-1])
+            # frame_idx, time = time_from_name(frame)
 
             per_video_frame_gt_preds[video_name][frame_idx] = (int(gt), int(pred))
             
