@@ -1,7 +1,9 @@
 import torch
 import torchvision
 
-from lightning import LightningDataModule
+# from lightning import LightningDataModule
+from pytorch_lightning import LightningDataModule
+
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import transforms
 from typing import Any, Dict, Optional, Tuple

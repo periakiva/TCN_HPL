@@ -13,6 +13,7 @@ log_dir: ${paths.root_dir}/logs/
 # path generation pattern is specified in `configs/hydra/default.yaml`
 # use it to store all files generated during the run, like ckpts and metrics
 output_dir: ${hydra:runtime.output_dir}
+# output_dir: ${paths.log_dir}/${task_name}/runs/${now:%Y-%m-%d}_${now:%H-%M-%S}
 
 # path to working directory
 work_dir: ${hydra:runtime.cwd}
