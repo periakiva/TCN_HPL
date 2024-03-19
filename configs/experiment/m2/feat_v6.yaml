@@ -40,7 +40,7 @@ model:
 data:
   num_classes: 9 # activities: includes background
   batch_size: 512
-  num_workers: 0
+  num_workers: 16
   epoch_length: 20000
   window_size: 30
   sample_rate: 1

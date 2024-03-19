@@ -47,14 +47,9 @@ def setup_detectron_cfg(args):
 
 
 class PosesGenerator(object):
-    def __init__(self, config: dict):
+    def __init__(self, config: dict) -> None:
         self.config = config
         self.root_path = config['root']
-        # self.paths = utils.dictionary_contents(config['root'], types=['*.JPG', '*.jpg', '*.JPEG', '*.jpeg', '*.png'], recursive=True)
-        
-        # self.train_dataset = kwcoco.CocoDataset(config['data']['train'])
-        # self.val_dataset = kwcoco.CocoDataset(config['data']['val'])
-        # self.test_dataset = kwcoco.CocoDataset(config['data']['test'])
         
         self.dataset = kwcoco.CocoDataset(config['data'][config['task']])
         
@@ -67,10 +62,6 @@ class PosesGenerator(object):
                     ]
     
         self.keypoints_cats_dset = [{'name': value, 'id': index} for index, value in enumerate(self.keypoints_cats)]
-
-        # self.train_dataset.dataset['keypoint_categories'] = self.keypoints_cats_dset
-        # self.val_dataset.dataset['keypoint_categories'] = self.keypoints_cats_dset
-        # self.test_dataset.dataset['keypoint_categories'] = self.keypoints_cats_dset
         
         self.dataset.dataset['keypoint_categories'] = self.keypoints_cats_dset
         
@@ -94,15 +85,39 @@ class PosesGenerator(object):
         else:
             self.pose_dataset_info = DatasetInfo(self.pose_dataset_info)
         
-    def generate_bbs_and_pose(self, dset, save_intermediate=True):
+    def generate_bbs_and_pose(self, dset: kwcoco.CocoDataset, save_intermediate: bool =True) -> kwcoco.CocoDataset:
         
-        # json_file = utils.initialize_coco_json()ds
-        dsets_paths = []
+        """
+        Generates a CocoDataset with bounding box (bbs) and pose annotations generated from the dataset's images.
+        This method processes each image, detects bounding boxes and classifies them into 'patient' or 'user' categories,
+        and performs pose estimation on 'patient' detections. Annotations are added to the dataset, including bounding
+        box coordinates, category IDs, and, for patients, pose keypoints.
+
+        Parameters:
+        - dset (kwcoco.CocoDataset): The dataset to generate, which must be an instance of `kwcoco.CocoDataset`.
+        - save_intermediate (bool, optional): If True, periodically saves the dataset to disk after processing a set number
+        of images. This is useful for long-running jobs to prevent data loss and to track progress. Default is True.
+
+        Returns:
+        - kwcoco.CocoDataset: The input dataset, now added with additional annotations for bounding boxes and pose
+        keypoints where applicable.
+
+        Note:
+        - The bounding box and pose estimation models are assumed to be accessible via `self.predictor` and `self.pose_model`,
+        respectively. These models must be properly configured before calling this method.
+        - The method uses a progress bar to indicate processing progress through the dataset's images.
+        - This function automatically handles the categorization of detections into 'patient' and 'user' based on the model's
+        predictions and performs pose estimation only on 'patient' detections.
+        - Save intervals for the intermediate dataset dumps can be adjusted based on the dataset size and processing time
+        per image to balance between progress tracking and performance.
+        - The `kwcoco.CocoDataset` class is part of the `kwcoco` package, offering structured management of COCO-format
+        datasets, including easy addition of annotations and categories, and saving/loading datasets.
+        """
+    
         patient_cid = dset.add_category('patient')
         user_cid = dset.add_category('user')
-        # pbar = tqdm.tqdm(enumerate(self.paths), total=len(self.paths))
         pbar = tqdm.tqdm(enumerate(dset.imgs.items()), total=len(list(dset.imgs.keys())))
-
+        
         for index, (img_id, img_dict) in pbar:
             
             path = img_dict['file_name']
@@ -119,12 +134,6 @@ class PosesGenerator(object):
             scores = scores.numpy()
             
             file_name = path.split('/')[-1]
-            # video_name = path.split('/')[-2]
-            # print(f"file name: {file_name}")
-            # print(f"file path: {path}")
-            # print(f"video name: {video_name}")
-            # print(f"boxes: {boxes.shape}")
-            # print(f"classes: {classes}")
             
             if boxes is not None:
                 
@@ -147,8 +156,6 @@ class PosesGenerator(object):
                     current_ann['label'] = pred_label
                     current_ann['bbox_score'] = str(round(scores[box_id] * 100,2)) + '%'
                     
-                    # print(f"box: {np.asarray(_bbox).tolist()}")
-                    
                     if box_class == 0:
                         person_results = [current_ann]
                         
@@ -163,15 +170,7 @@ class PosesGenerator(object):
                                                                                         return_heatmap=None,
                                                                                         outputs=['backbone'])
                         
-                        # print(f"outputs: {type(returned_outputs[0])}")
-                        # print(f"outputs: {len(returned_outputs)}")
-                        # print(f"outputs: {returned_outputs[0]}")
-                        # image_features = returned_outputs[0]['backbone'][0,:,:,-1]
-                        
-                        # print(f"image_features: {image_features.shape}")
-                        # exit()
                         pose_keypoints = pose_results[0]['keypoints'].tolist()
-                        # bbox = pose_results[0]['bbox'].tolist()
                         pose_keypoints_list = []
                         for kp_index, keypoint in enumerate(pose_keypoints):
                             kp_dict = {'xy': [keypoint[0], keypoint[1]], 
@@ -199,43 +198,35 @@ class PosesGenerator(object):
                     print(f"Saved intermediate dataset at index {index} to: {dset_inter_name}")
                     
         return dset
+        
+    def run(self) -> None:
+        """
+        Executes the process of generating bounding box and pose annotations for a dataset and then saves the
+        enhanced dataset to disk.
 
-    # def predict_poses(self, dset):
-    #     pass
-        
-    def run(self):
-        # self.train_dataset = self.generate_bbs_and_pose(self.train_dataset)
-        # self.val_dataset = self.generate_bbs_and_pose(self.val_dataset)
-        # self.test_dataset = self.generate_bbs_and_pose(self.test_dataset)
-        
+        This method serves as the main entry point for the class it belongs to. It calls `generate_bbs_and_pose`
+        with the current instance's dataset to add bounding box and pose annotations based on the results of object
+        detection and pose estimation models. After processing the entire dataset, it saves the enhanced dataset
+        with annotations to a specified location on disk in COCO format.
+
+        The final dataset, including all generated annotations, is saved to a JSON file named according to the
+        configuration settings provided in `self.config`, specifically within the 'save_root' directory and named
+        to reflect that it includes detections and pose estimations.
+
+        Note:
+        - This method relies on `self.generate_bbs_and_pose` to perform the actual processing of the dataset, which
+        must be properly implemented and capable of handling the dataset's images.
+        - The save path for the final dataset is constructed from configuration parameters stored in `self.config`.
+        - The method prints the path to the saved dataset file upon completion, providing a reference to the output.
+        - It's assumed that `self.dataset` is already loaded or initialized and is an instance compatible with the
+        processing expected by `generate_bbs_and_pose`.
+        """
         self.dataset = self.generate_bbs_and_pose(self.dataset)
         
-        # train_path_name = self.config['data']['train'][:-12].split('/')[-1] #remove .mscoco.json
-        # val_path_name = self.config['data']['val'][:-12].split('/')[-1] #remove .mscoco.json
-        # test_path_name = self.config['data']['test'][:-12].split('/')[-1] #remove .mscoco.json
-        
-        
-        
-        # train_path_with_pose = f"{self.config['data']['save_root']}/{train_path_name}_with_dets_and_pose.mscoco.json"
-        # val_path_with_pose = f"{self.config['data']['save_root']}/{val_path_name}_with_dets_and_pose.mscoco.json"
-        # test_path_with_pose = f"{self.config['data']['save_root']}/{test_path_name}_with_dets_and_pose.mscoco.json"
-        
-        dataset_path_with_pose = f"{self.config['data']['save_root']}/{self.dataset_path_name}_with_dets_and_pose.mscoco.json"
-        # print(f"train_path: {train_path}")
-        # print(f"train_path_with_pose: {train_path_with_pose}")
-        # self.train_dataset.dump(train_path_with_pose, newlines=True)
-        # print(f"Saved train dataset to: {train_path_with_pose}")
-        
-        # self.val_dataset.dump(val_path_with_pose, newlines=True)
-        # print(f"Saved val dataset to: {val_path_with_pose}")
-        
-        # self.test_dataset.dump(test_path_with_pose, newlines=True)
-        # print(f"Saved test dataset to: {test_path_with_pose}")
-        
+        dataset_path_with_pose = f"{self.config['data']['save_root']}/{self.dataset_path_name}_with_dets_and_pose.mscoco.json"        
         self.dataset.dump(dataset_path_with_pose, newlines=True)
         print(f"Saved test dataset to: {dataset_path_with_pose}")
-
-        
+        return
 
 def main():
     

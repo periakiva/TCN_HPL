@@ -4,7 +4,10 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from lightning import LightningModule
+# from lightning import LightningModule
+from pytorch_lightning import LightningModule
+
+
 from torchmetrics import MaxMetric, MeanMetric
 from torchmetrics.classification.accuracy import Accuracy
 from torchmetrics.classification import MulticlassConfusionMatrix
@@ -349,11 +352,17 @@ class PTGLitModule(LightningModule):
         # acc = self.train_acc.compute()  # get current val acc
         # self.train_acc_best(acc)  # update best so far val acc
         
-        all_targets = torch.concat(self.training_step_outputs_target) # shape: #frames
-        all_preds = torch.concat(self.training_step_outputs_pred) # shape: #frames
-        all_probs = torch.concat(self.training_step_outputs_prob) # shape (#frames, #act labels)
-        all_source_vids = torch.concat(self.training_step_outputs_source_vid)
-        all_source_frames = torch.concat(self.training_step_outputs_source_frame)
+        # all_targets = torch.concat(self.training_step_outputs_target) # shape: #frames
+        # all_preds = torch.concat(self.training_step_outputs_pred) # shape: #frames
+        # all_probs = torch.concat(self.training_step_outputs_prob) # shape (#frames, #act labels)
+        # all_source_vids = torch.concat(self.training_step_outputs_source_vid)
+        # all_source_frames = torch.concat(self.training_step_outputs_source_frame)
+        
+        all_targets = torch.cat(self.training_step_outputs_target) # shape: #frames
+        all_preds = torch.cat(self.training_step_outputs_pred) # shape: #frames
+        all_probs = torch.cat(self.training_step_outputs_prob) # shape (#frames, #act labels)
+        all_source_vids = torch.cat(self.training_step_outputs_source_vid)
+        all_source_frames = torch.cat(self.training_step_outputs_source_frame)
         
         # print(f"Training Per class occurences in GT: {torch.unique(all_targets, return_counts=True)}")
         
@@ -520,13 +529,20 @@ class PTGLitModule(LightningModule):
         # counter = collections.Counter(self.validation_step_outputs_target)
 
 
-        all_targets = torch.concat(self.validation_step_outputs_target) # shape: #frames
-        all_preds = torch.concat(self.validation_step_outputs_pred) # shape: #frames
-        all_probs = torch.concat(self.validation_step_outputs_prob) # shape (#frames, #act labels)
-        all_source_vids = torch.concat(self.validation_step_outputs_source_vid)
-        all_source_frames = torch.concat(self.validation_step_outputs_source_frame)
+        # all_targets = torch.concat(self.validation_step_outputs_target) # shape: #frames
+        # all_preds = torch.concat(self.validation_step_outputs_pred) # shape: #frames
+        # all_probs = torch.concat(self.validation_step_outputs_prob) # shape (#frames, #act labels)
+        # all_source_vids = torch.concat(self.validation_step_outputs_source_vid)
+        # all_source_frames = torch.concat(self.validation_step_outputs_source_frame)
+        
+        all_targets = torch.cat(self.validation_step_outputs_target) # shape: #frames
+        all_preds = torch.cat(self.validation_step_outputs_pred) # shape: #frames
+        all_probs = torch.cat(self.validation_step_outputs_prob) # shape (#frames, #act labels)
+        all_source_vids = torch.cat(self.validation_step_outputs_source_vid)
+        all_source_frames = torch.cat(self.validation_step_outputs_source_frame)
 
         # print(f"Per class occurences in GT: {torch.unique(all_targets, return_counts=True)}")
+        # print(f"all_targets: {all_targets.shape}")
         
         # Load val vidoes
         if self.val_frames is None:
