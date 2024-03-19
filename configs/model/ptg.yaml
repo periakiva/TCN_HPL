@@ -3,8 +3,8 @@ _target_: tcn_hpl.models.ptg_module.PTGLitModule
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
-  lr: 0.0005
-  weight_decay: 0.0
+  lr: 0.0001
+  weight_decay: 0.0001
 
 scheduler:
   _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
@@ -15,23 +15,28 @@ scheduler:
 
 net:
   _target_: tcn_hpl.models.components.ms_tcs_net.MultiStageModel
-  num_stages: 4 
-  num_layers: 10 
-  num_f_maps: 64
-  dim: 204
+  num_stages: 4
+  num_layers: 5
+  num_f_maps: 128
+  # dim: 204
+  dim: 128
   num_classes: ${data.num_classes}
+  window_size: ${data.window_size}
 
 criterion:
   _target_: tcn_hpl.models.components.focal_loss.FocalLoss
-  alpha: 0.25 
-  gamma: 2
+  alpha: 0.25 # 0.25
+  gamma: 1
   weight: None 
+  # weight: [1, 1, 1, 1, 1, 0.75, 0.75, 1, 1]
+  # weight: [1, 1, 1, 1, 1, 1]
   reduction: "mean"
 
 data_dir: ${paths.data_dir}
 
 # Smoothing loss weight
-smoothing_loss: 0.015
+smoothing_loss: 0.0015
+use_smoothing_loss: False
 
 # Number of classes
 num_classes: ${data.num_classes}

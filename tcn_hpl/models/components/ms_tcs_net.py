@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import copy
-
+import einops
 
 class MultiStageModel(nn.Module):
     def __init__(self, 
@@ -10,7 +10,8 @@ class MultiStageModel(nn.Module):
                  num_layers, 
                  num_f_maps, 
                  dim, 
-                 num_classes):
+                 num_classes,
+                 window_size,):
         """Initialize a `MultiStageModel` module.
 
         :param num_stages: Nubmer of State Model Layers.
@@ -21,6 +22,7 @@ class MultiStageModel(nn.Module):
         """
         super(MultiStageModel, self).__init__()
         self.stage1 = SingleStageModel(num_layers, num_f_maps, dim, num_classes)
+        print(f"num classes: {num_classes}")
         self.stages = nn.ModuleList(
             [
                 copy.deepcopy(
@@ -29,13 +31,56 @@ class MultiStageModel(nn.Module):
                 for s in range(num_stages - 1)
             ]
         )
+        
+        
+        self.fc = nn.Sequential(
+            
+            nn.Linear(dim*window_size, 4096),
+            nn.GELU(),
+            nn.Dropout(0.25),
+            nn.Linear(4096, 8192),
+            nn.Dropout(0.25),
+            nn.Linear(8192, 16384),
+            nn.GELU(),
+            nn.Dropout(0.25),
+            nn.Linear(16384, 8192),
+            nn.GELU(),
+            nn.Dropout(0.25),
+            nn.Linear(8192, 4096),
+            nn.Dropout(0.25),
+            nn.Linear(4096, dim*window_size),
+            )
+        # self.fc1 = nn.Linear(dim*30, 4096)
+        # self.act = nn.GELU()
+        # self.drop1 = nn.Dropout(0.1)
+        # self.fc2 = nn.Linear(4096, 8192)
+        # self.drop2 = nn.Dropout(0.1)
+
+        # self.fc3 = nn.Linear(8192, 16384)
+        # self.act3 = nn.GELU()
+        # self.drop3 = nn.Dropout(0.1)
+        # self.fc4 = nn.Linear(16384, dim*30)
+        
+        # self.fc = nn.Linear(1280, 2048)
 
     def forward(self, x, mask):
+        b, d, c = x.shape
+        # print(f"x: {x.shape}")
+        # print(f"mask: {mask.shape}")
+        
+        re_x = einops.rearrange(x, 'b d c -> b (d c)')
+        re_x = self.fc(re_x)
+        x = einops.rearrange(re_x, 'b (d c) -> b d c', d=d, c=c)
+        # print(f"re_x: {re_x.shape}")
+        # print(f"x: {x.shape}")
+        
         out = self.stage1(x, mask)
         outputs = out.unsqueeze(0)
         for s in self.stages:
             out = s(F.softmax(out, dim=1) * mask[:, None, :], mask)
             outputs = torch.cat((outputs, out.unsqueeze(0)), dim=0)
+        
+        # print(f"outputs: {outputs.shape}")
         return outputs
 
 
@@ -52,10 +97,12 @@ class SingleStageModel(nn.Module):
         self.conv_out = nn.Conv1d(num_f_maps, num_classes, 1)
 
     def forward(self, x, mask):
+        
         out = self.conv_1x1(x)
         for layer in self.layers:
             out = layer(out, mask)
         out = self.conv_out(out) * mask[:, None, :]
+        
         return out
 
 
@@ -66,11 +113,17 @@ class DilatedResidualLayer(nn.Module):
             in_channels, out_channels, 3, padding=dilation, dilation=dilation
         )
         self.conv_1x1 = nn.Conv1d(out_channels, out_channels, 1)
-        self.dropout = nn.Dropout()
+        self.dropout = nn.Dropout(0.5)
+        self.activation = nn.LeakyReLU(0.2)
+        self.norm = nn.BatchNorm1d(out_channels)
+        # self.pool = nn.MaxPool1d(kernel_size=3, stride=1)
 
     def forward(self, x, mask):
         out = F.relu(self.conv_dilated(x))
         out = self.conv_1x1(out)
+        out = self.activation(out)
+        # out = self.pool(out)
+        out = self.norm(out)
         out = self.dropout(out)
         return (x + out) * mask[:, None, :]
 

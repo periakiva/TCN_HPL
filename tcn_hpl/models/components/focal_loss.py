@@ -11,10 +11,16 @@ class FocalLoss(nn.Module):
         self.gamma = gamma
         self.alpha = alpha
         self.reduction = reduction
+        # print(f"weight: {weight}, type: {type(weight)}")
+        if weight == "None":
+            weight=None
+        else:
+            weight = torch.Tensor(weight)
 
         self.ce = nn.CrossEntropyLoss(
             ignore_index=-100, 
-            reduction="none"
+            reduction="none",
+            weight=weight
         )
 
     def forward(self, inputs, targets):

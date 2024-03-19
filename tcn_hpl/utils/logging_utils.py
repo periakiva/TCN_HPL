@@ -1,6 +1,8 @@
 from typing import Any, Dict
 
-from lightning.pytorch.utilities import rank_zero_only
+# from lightning.pytorch.utilities import rank_zero_only
+from pytorch_lightning.utilities import rank_zero_only
+
 from omegaconf import OmegaConf
 
 from tcn_hpl.utils import pylogger

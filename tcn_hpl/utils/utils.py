@@ -1,13 +1,52 @@
 import warnings
 from importlib.util import find_spec
 from typing import Any, Callable, Dict, Tuple
-
+import os
+from glob import glob
 from omegaconf import DictConfig
-
+import yaml
 from tcn_hpl.utils import pylogger, rich_utils
 
 log = pylogger.get_pylogger(__name__)
 
+
+def load_yaml_as_dict(yaml_path: str) -> dict:
+    """
+    Load a YAML configuration file as a dictionary.
+
+    Parameters:
+        yaml_path (str): Path to the YAML file.
+
+    Returns:
+        dict: A dictionary containing the configuration settings.
+    """
+    with open(yaml_path, 'r') as f:
+        config_dict = yaml.load(f, Loader=yaml.FullLoader)
+    return config_dict
+
+def dictionary_contents(path: str, types: list, recursive: bool = False) -> list:
+    """
+    Extract files of specified types from directories, optionally recursively.
+
+    Parameters:
+        path (str): Root directory path.
+        types (list): List of file types (extensions) to be extracted.
+        recursive (bool, optional): Search for files in subsequent directories if True. Default is False.
+
+    Returns:
+        list: List of file paths with full paths.
+    """
+    files = []
+    if recursive:
+        path = path + "/**/*"
+    for type in types:
+        if recursive:
+            for x in glob(path + type, recursive=True):
+                files.append(os.path.join(path, x))
+        else:
+            for x in glob(path + type):
+                files.append(os.path.join(path, x))
+    return files
 
 def extras(cfg: DictConfig) -> None:
     """Applies optional utilities before the task is started.

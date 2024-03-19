@@ -1,0 +1,64 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=example
+
+defaults:
+  - override /data: ptg
+  - override /model: ptg
+  - override /callbacks: default
+  - override /trainer: gpu
+  - override /paths: default
+  - override /logger: aim
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+exp_name: "p_m2_tqt_data_test_feat_v6_only_hands_joints_v2" #[p_m2_tqt_data_test_feat_v6]
+
+tags: ["m2", "ms_tcn"]
+
+seed: 12345
+
+trainer:
+  min_epochs: 50
+  max_epochs: 400
+
+
+model:
+  compile: false
+
+  net:
+    dim: 332 # length of feature vector
+
+data:
+  num_classes: 9 # activities: includes background
+  batch_size: 256
+  num_workers: 0
+  epoch_length: 20000
+  window_size: 30
+  #sample_rate: 2
+  
+  all_transforms:
+    train_order: [] #["MoveCenterPts", "NormalizePixelPts"]
+    test_order: [] #["NormalizePixelPts"]
+
+    MoveCenterPts:
+        feat_version: 6
+        num_obj_classes: 12 # not including background
+    NormalizeFromCenter:
+      feat_version: 6
+    NormalizePixelPts:
+      feat_version: 6
+      num_obj_classes: 12 # not including background
+
+paths:
+  data_dir: "/data/PTG/TCN_data/m2/p_m2_tqt_data_test_feat_v6_only_hands_joints" #[p_m2_tqt_data_test_feat_v6]
+  # root_dir: "/data/PTG/medical/training/activity_classifier/TCN_HPL"
+  root_dir: "/data/users/peri.akiva/PTG/medical/training/activity_classifier/TCN_HPL"
+
+logger:
+  aim:
+    experiment: ${exp_name}
+    capture_terminal_logs: true
+
+task_name: ${exp_name}
