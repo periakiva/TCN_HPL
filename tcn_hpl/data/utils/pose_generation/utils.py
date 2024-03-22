@@ -3,6 +3,7 @@ import glob
 from glob import glob
 import os
 import yaml
+
 def get_parser(config_file):
     parser = argparse.ArgumentParser(description="Detectron2 demo for builtin configs")
     parser.add_argument(
