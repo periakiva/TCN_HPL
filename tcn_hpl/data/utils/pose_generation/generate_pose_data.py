@@ -10,6 +10,7 @@ import os
 import tempfile
 import time
 import warnings
+import torch
 import cv2
 import tqdm
 from detectron2.config import get_cfg
@@ -52,6 +53,8 @@ class PosesGenerator(object):
         self.root_path = config['root']
         
         self.dataset = kwcoco.CocoDataset(config['data'][config['task']])
+        self.patient_cid = self.dataset.add_category('patient')
+        self.user_cid = self.dataset.add_category('user')
         
         self.keypoints_cats = [
                         "nose", "mouth", "throat","chest","stomach","left_upper_arm",
@@ -84,7 +87,74 @@ class PosesGenerator(object):
                 DeprecationWarning)
         else:
             self.pose_dataset_info = DatasetInfo(self.pose_dataset_info)
+    
+    def predict_single(self, image: torch.tensor) -> list:
         
+        predictions, _ = self.predictor.run_on_image(image)
+        instances = predictions["instances"].to('cpu')
+        boxes = instances.pred_boxes if instances.has("pred_boxes") else None
+        scores = instances.scores if instances.has("scores") else None
+        classes = instances.pred_classes.tolist() if instances.has("pred_classes") else None
+        
+        boxes_list, labels_list, keypoints_list = [], [], []
+        
+        if boxes is not None:
+                
+            # person_results = []
+            for box_id, _bbox in enumerate(boxes):
+                
+                box_class = classes[box_id]
+                if box_class == 0:
+                    pred_class = self.patient_cid
+                    pred_label = 'patient'
+                elif box_class == 1:
+                    pred_class = self.user_cid
+                    pred_label = 'user'
+                
+                boxes_list.append(np.asarray(_bbox).tolist())
+                labels_list.append(pred_label)
+                
+                
+                current_ann = {}
+                # current_ann['id'] = ann_id
+                current_ann['image_id'] = 0
+                current_ann['bbox'] = np.asarray(_bbox).tolist()#_bbox
+                current_ann['category_id'] = pred_class
+                current_ann['label'] = pred_label
+                current_ann['bbox_score'] = f"{scores[box_id] * 100:0.2f}"
+                
+                if box_class == 0:
+                    person_results = [current_ann]
+                    
+                    pose_results, returned_outputs = inference_top_down_pose_model(
+                                                                                    model=self.pose_model,
+                                                                                    img_or_path=image,
+                                                                                    person_results=person_results,
+                                                                                    bbox_thr=None,
+                                                                                    format='xyxy',
+                                                                                    dataset=self.pose_dataset,
+                                                                                    dataset_info=self.pose_dataset_info,
+                                                                                    return_heatmap=False,
+                                                                                    outputs=['backbone'])
+                    
+                    pose_keypoints = pose_results[0]['keypoints'].tolist()
+                    pose_keypoints_list = []
+                    for kp_index, keypoint in enumerate(pose_keypoints):
+                        kp_dict = {'xy': [keypoint[0], keypoint[1]], 
+                                'keypoint_category_id': kp_index, 
+                                'keypoint_category': self.keypoints_cats[kp_index]}
+                        pose_keypoints_list.append(kp_dict)
+                    
+                    keypoints_list.append(pose_keypoints_list)
+                    # print(f"pose_keypoints_list: {pose_keypoints_list}")
+                    current_ann['keypoints'] = pose_keypoints_list
+                    # current_ann['image_features'] = image_features
+                
+                # dset.add_annotation(**current_ann)
+        
+        # results = []
+        return boxes_list, labels_list, keypoints_list
+    
     def generate_bbs_and_pose(self, dset: kwcoco.CocoDataset, save_intermediate: bool =True) -> kwcoco.CocoDataset:
         
         """
@@ -114,15 +184,24 @@ class PosesGenerator(object):
         datasets, including easy addition of annotations and categories, and saving/loading datasets.
         """
     
-        patient_cid = dset.add_category('patient')
-        user_cid = dset.add_category('user')
-        pbar = tqdm.tqdm(enumerate(dset.imgs.items()), total=len(list(dset.imgs.keys())))
+        # patient_cid = self.dataset.add_category('patient')
+        # user_cid = self.dataset.add_category('user')
+        pbar = tqdm.tqdm(enumerate(self.dataset.imgs.items()), total=len(list(self.dataset.imgs.keys())))
         
         for index, (img_id, img_dict) in pbar:
             
             path = img_dict['file_name']
             
             img = read_image(path, format="BGR")
+            
+            # bs, ls, kps = self.predict_single(img)
+            
+            # print(f"boxes: {bs}")
+            # print(f"ls: {ls}")
+            # print(f"kps: {kps}")
+            
+            # continue
+            
             predictions, visualized_output = self.predictor.run_on_image(img)
             
             instances = predictions["instances"].to('cpu')
@@ -142,10 +221,10 @@ class PosesGenerator(object):
                     
                     box_class = classes[box_id]
                     if box_class == 0:
-                        pred_class = patient_cid
+                        pred_class = self.patient_cid
                         pred_label = 'patient'
                     elif box_class == 1:
-                        pred_class = user_cid
+                        pred_class = self.user_cid
                         pred_label = 'user'
                         
                     current_ann = {}
@@ -182,7 +261,7 @@ class PosesGenerator(object):
                         current_ann['keypoints'] = pose_keypoints_list
                         # current_ann['image_features'] = image_features
                     
-                    dset.add_annotation(**current_ann)
+                    self.dataset.add_annotation(**current_ann)
             
             # import matplotlib.pyplot as plt
             # image_show = dset.draw_image(gid=img_id)
@@ -194,10 +273,10 @@ class PosesGenerator(object):
             if save_intermediate:
                 if (index % 45000) == 0:
                     dset_inter_name = f"{self.config['data']['save_root']}/{self.dataset_path_name}_{index}_with_dets_and_pose.mscoco.json"
-                    dset.dump(dset_inter_name, newlines=True)
+                    self.dataset.dump(dset_inter_name, newlines=True)
                     print(f"Saved intermediate dataset at index {index} to: {dset_inter_name}")
                     
-        return dset
+        return self.dataset
         
     def run(self) -> None:
         """
