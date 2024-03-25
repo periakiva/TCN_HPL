@@ -1,6 +1,7 @@
 """Generate bounding box detections, then generate poses for patients
     """
 
+# import vit
 import argparse
 import glob
 from glob import glob
@@ -21,10 +22,10 @@ from predictor import VisualizationDemo
 # import tcn_hpl.utils.utils as utils
 from mmpose.apis import (inference_top_down_pose_model, init_pose_model,
                          vis_pose_result)
-import utils
+import .utils
 import kwcoco
 from mmpose.datasets import DatasetInfo
-print(f"utils: {utils.__file__}")
+# print(f"utils: {utils.__file__}")
 
 
 import warnings
