@@ -1,27 +1,18 @@
 """Generate bounding box detections, then generate poses for patients
     """
 
-import argparse
-import glob
-from glob import glob
-import multiprocessing as mp
 import numpy as np
-import os
-import tempfile
-import time
 import warnings
 import torch
-import cv2
 import tqdm
 from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
 from detectron2.utils.logger import setup_logger
-import json
-from .predictor import VisualizationDemo
+from tcn_hpl.data.utils.pose_generation.predictor import VisualizationDemo
 # import tcn_hpl.utils.utils as utils
 from mmpose.apis import (inference_top_down_pose_model, init_pose_model,
                          vis_pose_result)
-from .utils import get_parser, load_yaml_as_dict
+from tcn_hpl.data.utils.pose_generation.utils import get_parser, load_yaml_as_dict
 import kwcoco
 from mmpose.datasets import DatasetInfo
 # print(f"utils: {utils.__file__}")
