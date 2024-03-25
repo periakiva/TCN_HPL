@@ -1,6 +1,8 @@
 import torch
 from mmpose.apis import inference_top_down_pose_model
 import numpy as np
+from mmpose.datasets import DatasetInfo
+import warnings
 
 def predict_single(det_model, pose_model, image: torch.tensor) -> list:
         
@@ -17,6 +19,15 @@ def predict_single(det_model, pose_model, image: torch.tensor) -> list:
         pose_dataset = pose_model.cfg.data['test']['type']
         pose_dataset_info = pose_model.cfg.data['test'].get('dataset_info', None)
         
+        pose_dataset_info = pose_model.cfg.data['test'].get('dataset_info', None)
+        if pose_dataset_info is None:
+            warnings.warn(
+                'Please set `dataset_info` in the config.'
+                'Check https://github.com/open-mmlab/mmpose/pull/663 for details.',
+                DeprecationWarning)
+        else:
+            pose_dataset_info = DatasetInfo(pose_dataset_info)
+            
         predictions, _ = det_model.run_on_image(image)
         instances = predictions["instances"].to('cpu')
         boxes = instances.pred_boxes if instances.has("pred_boxes") else None
