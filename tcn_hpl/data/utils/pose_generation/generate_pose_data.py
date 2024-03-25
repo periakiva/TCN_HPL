@@ -1,7 +1,6 @@
 """Generate bounding box detections, then generate poses for patients
     """
 
-# import vit
 import argparse
 import glob
 from glob import glob
@@ -18,11 +17,11 @@ from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
 from detectron2.utils.logger import setup_logger
 import json
-from predictor import VisualizationDemo
+from .predictor import VisualizationDemo
 # import tcn_hpl.utils.utils as utils
 from mmpose.apis import (inference_top_down_pose_model, init_pose_model,
                          vis_pose_result)
-import .utils
+from .utils import get_parser, load_yaml_as_dict
 import kwcoco
 from mmpose.datasets import DatasetInfo
 # print(f"utils: {utils.__file__}")
@@ -153,7 +152,7 @@ class PosesGenerator(object):
         
         self.dataset_path_name = self.config['data'][self.config['task']][:-12].split('/')[-1] #remove .mscoco.json
         
-        self.args = utils.get_parser(self.config['detection_model_config']).parse_args()
+        self.args = get_parser(self.config['detection_model_config']).parse_args()
         detecron_cfg = setup_detectron_cfg(self.args)
         self.predictor = VisualizationDemo(detecron_cfg)
         
@@ -393,7 +392,7 @@ class PosesGenerator(object):
 def main():
     
     main_config_path = f"configs/main.yaml"
-    config = utils.load_yaml_as_dict(main_config_path)
+    config = load_yaml_as_dict(main_config_path)
 
     PG = PosesGenerator(config)
     PG.run()
