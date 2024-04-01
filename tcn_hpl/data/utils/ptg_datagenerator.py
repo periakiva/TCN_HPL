@@ -106,7 +106,10 @@ def main(task: str):
         for label in activity_labels:
             i = label["id"]
             label_str = label["label"]
-            activity_labels_desc_mapping[label['description']] = label["label"]
+            if "description" in label.keys():
+                activity_labels_desc_mapping[label['description']] = label["label"]
+            elif "full_str" in label.keys():
+                activity_labels_desc_mapping[label['full_str']] = label["label"]
             if label_str == "done":
                 continue
             mapping.write(f"{i} {label_str}\n")
@@ -344,5 +347,5 @@ def main(task: str):
     print(f"Saved training data to {output_data_dir}")
 
 if __name__ == '__main__':
-    task = "m3"
+    task = "r18"
     main(task=task)
