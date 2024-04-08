@@ -90,6 +90,7 @@ class PTGLitModule(LightningModule):
         self.save_hyperparameters(logger=False)
 
         self.net = net
+        
 
         # Get Action Names
         mapping_file = f"{self.hparams.data_dir}/{mapping_file_name}"
@@ -102,6 +103,9 @@ class PTGLitModule(LightningModule):
         
         self.class_ids = list(actions_dict.values())
         self.classes = list(actions_dict.keys())
+        # print(f"CLASSES IN MODEL: {self.classes}")
+        # print(f"actions_dict: {actions_dict}")
+        # exit()
         self.action_id_to_str = dict(zip(self.class_ids, self.classes))
 
         # loss functions
@@ -661,11 +665,11 @@ class PTGLitModule(LightningModule):
         """Lightning hook that is called when a test epoch ends."""
         # update and log metrics
 
-        all_targets = torch.concat(self.validation_step_outputs_target) # shape: #frames
-        all_preds = torch.concat(self.validation_step_outputs_pred) # shape: #frames
-        all_probs = torch.concat(self.validation_step_outputs_prob) # shape (#frames, #act labels)
-        all_source_vids = torch.concat(self.validation_step_outputs_source_vid)
-        all_source_frames = torch.concat(self.validation_step_outputs_source_frame)
+        all_targets = torch.cat(self.validation_step_outputs_target) # shape: #frames
+        all_preds = torch.cat(self.validation_step_outputs_pred) # shape: #frames
+        all_probs = torch.cat(self.validation_step_outputs_prob) # shape (#frames, #act labels)
+        all_source_vids = torch.cat(self.validation_step_outputs_source_vid)
+        all_source_frames = torch.cat(self.validation_step_outputs_source_frame)
 
         # Load test vidoes
         if self.test_frames is None:

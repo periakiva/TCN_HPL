@@ -14,7 +14,8 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 # exp_name: "p_m2_tqt_data_test_feat_v6_with_pose" #[_v2_aug_False]
-exp_name: "p_r18_feat_v6_with_pose_v3_aug_False_reshuffle_True" #[_v2_aug_False]
+# exp_name: "p_r18_feat_v6_with_pose_v3_aug_False_reshuffle_True" #[_v2_aug_False]
+exp_name: "p_r18_feat_v6_with_pose_v3_aug_False_reshuffle_True_bbn" #[_v2_aug_False]
 # exp_name: "p_m2_tqt_data_test_feat_v6_with_pose_v2_aug_False_reshuffle_False" #[_v2_aug_False]
 # exp_name: "p_m2_tqt_data_test_feat_v6_with_pose_v2_aug_True_reshuffle_True" #[_v2_aug_False]
 # exp_name: "p_m2_tqt_data_test_feat_v6_with_pose_v2_aug_True_reshuffle_False" #[_v2_aug_False]
@@ -70,14 +71,20 @@ data_gen:
   val_vid_ids: [3, 7, 10, 18, 27, 32, 41]
   test_vid_ids: [50, 13, 47, 25]
 
+  train_vid_ids_bbn: [1, 2, 3, 4, 5, 6, 7, 8]
+  val_vid_ids_bbn: [9]
+  test_vid_ids_bbn: [10]
+
 paths:
-  data_dir: "/data/PTG/TCN_data/r18/p_r18_feat_v6_with_pose_v3_aug_False_reshuffle_True" #[_v2_aug_False]
+  # data_dir: "/data/PTG/TCN_data/r18/p_r18_feat_v6_with_pose_v3_aug_False_reshuffle_True" #[_v2_aug_False]
+  data_dir: "/data/PTG/TCN_data/r18/p_r18_feat_v6_with_pose_v3_aug_False_reshuffle_True_bbn" #[_v2_aug_False]
   # data_dir: "/data/PTG/TCN_data/m2/p_m2_tqt_data_test_feat_v6_with_pose_v2_aug_False_reshuffle_False" #[_v2_aug_False]
   # data_dir: "/data/PTG/TCN_data/m2/p_m2_tqt_data_test_feat_v6_with_pose_v2_aug_True_reshuffle_True" #[_v2_aug_False]
   # data_dir: "/data/PTG/TCN_data/m2/p_m2_tqt_data_test_feat_v6_with_pose_v2_aug_True_reshuffle_False" #[_v2_aug_False]
   # root_dir: "/data/PTG/medical/training/activity_classifier/TCN_HPL"
   root_dir: "/data/users/peri.akiva/PTG/medical/training/activity_classifier/TCN_HPL"
   dataset_kwcoco: "/data/users/peri.akiva/datasets/ptg/r18_all_all_obj_results_with_dets_and_pose.mscoco.json"
+  dataset_kwcoco_lab: "/data/users/peri.akiva/datasets/ptg/r18_all_bbn_lab_data_all_obj_results_with_dets_and_pose.mscoco.json"
   activity_config_root: "/home/local/KHQ/peri.akiva/projects/angel_system/config/activity_labels"
   activity_config_fn: "${paths.activity_config_root}/${task}"
   ptg_root: "/home/local/KHQ/peri.akiva/angel_system"

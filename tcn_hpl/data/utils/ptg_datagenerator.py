@@ -40,6 +40,13 @@ TASK_TO_NAME = {
     'r18': "R18_Chest_Seal",
 }
 
+LAB_TASK_TO_NAME = {
+    'm2': "M2_Lab_Skills",
+    'm3': "M3_Lab_Skills",
+    'm5': "M5_Lab_Skills",
+    'r18': "R18_Lab_Skills",
+}
+
 FEAT_TO_BOOL = {
         "no_pose": [False, False],
         "with_pose": [True, True],
@@ -47,11 +54,11 @@ FEAT_TO_BOOL = {
         "only_objects_joints": [True, False]
     }
 
-def main(task: str):
-    config_path = f"/home/local/KHQ/peri.akiva/projects/TCN_HPL/configs/experiment/{task}/feat_v6.yaml"
+
+def main(task: str, ptg_root: str, config_root: str, data_type: str):
+    config_path = f"{config_root}/experiment/{task}/feat_v6.yaml"
     config = load_yaml_as_dict(config_path)
 
-    ptg_root = "/home/local/KHQ/peri.akiva/angel_system"
     activity_config_path = f"{ptg_root}/config/activity_labels/medical"
     feat_version = 6
 
@@ -72,7 +79,7 @@ def main(task: str):
         aug_trans_range, aug_rot_range = None, None
 
     
-    exp_name = f"p_{config['task']}_feat_v6_{config['data_gen']['feat_type']}_v3_aug_{augment}_reshuffle_{reshuffle_datasets}" #[p_m2_tqt_data_test_feat_v6_with_pose, p_m2_tqt_data_test_feat_v6_only_hands_joints, p_m2_tqt_data_test_feat_v6_only_objects_joints, p_m2_tqt_data_test_feat_v6_no_pose]
+    exp_name = f"p_{config['task']}_feat_v6_{config['data_gen']['feat_type']}_v3_aug_{augment}_reshuffle_{reshuffle_datasets}_{data_type}" #[p_m2_tqt_data_test_feat_v6_with_pose, p_m2_tqt_data_test_feat_v6_only_hands_joints, p_m2_tqt_data_test_feat_v6_only_objects_joints, p_m2_tqt_data_test_feat_v6_no_pose]
 
     output_data_dir = f"{config['paths']['output_data_dir_root']}/{config['task']}/{exp_name}"
 
@@ -121,30 +128,47 @@ def main(task: str):
     #####################
     ### create splits dsets
 
-    dset = kwcoco.CocoDataset(config['paths']['dataset_kwcoco'])
+    print(f"Generating features for task: {task}")
+    
+    if data_type == "gyges":
+        dset = kwcoco.CocoDataset(config['paths']['dataset_kwcoco'])
+    elif data_type == "bbn":
+        dset = kwcoco.CocoDataset(config['paths']['dataset_kwcoco_lab'])
 
     if reshuffle_datasets:
         
         train_img_ids, val_img_ids, test_img_ids = [], [], []
+        if data_type == "gyges":
+            task_name = config['task'].upper()
+            train_vidids = [dset.index.name_to_video[f"{task_name}-{index}"]['id'] for index in config['data_gen']['train_vid_ids'] if f"{task_name}-{index}" in dset.index.name_to_video.keys()]
+            val_vivids = [dset.index.name_to_video[f"{task_name}-{index}"]['id'] for index in config['data_gen']['val_vid_ids'] if f"{task_name}-{index}" in dset.index.name_to_video.keys()]
+            test_vivds = [dset.index.name_to_video[f"{task_name}-{index}"]['id'] for index in config['data_gen']['test_vid_ids'] if f"{task_name}-{index}" in dset.index.name_to_video.keys()]
+            
+            if config['data_gen']['filter_black_gloves']:
+                vidids_black_gloves = [dset.index.name_to_video[f"{task_name}-{index}"]['id'] for index in config['data_gen']['names_black_gloves'] if f"{task_name}-{index}" in dset.index.name_to_video.keys()]
+                
+                train_vidids = [x for x in train_vidids if x not in vidids_black_gloves]
+                val_vivids = [x for x in val_vivids if x not in vidids_black_gloves]
+                test_vivds = [x for x in test_vivds if x not in vidids_black_gloves]
+                
+            if config['data_gen']['filter_blue_gloves']:
+                vidids_blue_gloves = [dset.index.name_to_video[f"{task_name}-{index}"]['id'] for index in config['data_gen']['names_blue_gloves'] if f"{task_name}-{index}" in dset.index.name_to_video.keys()]
+                
+                train_vidids = [x for x in train_vidids if x not in vidids_blue_gloves]
+                val_vivids = [x for x in val_vivids if x not in vidids_blue_gloves]
+                test_vivds = [x for x in test_vivds if x not in vidids_blue_gloves]
         
-        task_name = config['task'].upper()
-        train_vidids = [dset.index.name_to_video[f"{task_name}-{index}"]['id'] for index in config['data_gen']['train_vid_ids'] if f"{task_name}-{index}" in dset.index.name_to_video.keys()]
-        val_vivids = [dset.index.name_to_video[f"{task_name}-{index}"]['id'] for index in config['data_gen']['val_vid_ids'] if f"{task_name}-{index}" in dset.index.name_to_video.keys()]
-        test_vivds = [dset.index.name_to_video[f"{task_name}-{index}"]['id'] for index in config['data_gen']['test_vid_ids'] if f"{task_name}-{index}" in dset.index.name_to_video.keys()]
-        
-        if config['data_gen']['filter_black_gloves']:
-            vidids_black_gloves = [dset.index.name_to_video[f"{task_name}-{index}"]['id'] for index in config['data_gen']['names_black_gloves'] if f"{task_name}-{index}" in dset.index.name_to_video.keys()]
-            
-            train_vidids = [x for x in train_vidids if x not in vidids_black_gloves]
-            val_vivids = [x for x in val_vivids if x not in vidids_black_gloves]
-            test_vivds = [x for x in test_vivds if x not in vidids_black_gloves]
-            
-        if config['data_gen']['filter_blue_gloves']:
-            vidids_blue_gloves = [dset.index.name_to_video[f"{task_name}-{index}"]['id'] for index in config['data_gen']['names_blue_gloves'] if f"{task_name}-{index}" in dset.index.name_to_video.keys()]
-            
-            train_vidids = [x for x in train_vidids if x not in vidids_blue_gloves]
-            val_vivids = [x for x in val_vivids if x not in vidids_blue_gloves]
-            test_vivds = [x for x in test_vivds if x not in vidids_blue_gloves]
+        elif data_type == "bbn":
+            task_name = config['task'].upper()
+            print(f"task name: {task_name}")
+            print(f"dset.index.name_to_video.keys(): {dset.index.name_to_video}")
+            all_vids = sorted(list(dset.index.name_to_video.keys()))
+            print(f"all vids: {all_vids}")
+            train_vidids = [dset.index.name_to_video[vid_name]['id'] for vid_name in all_vids if dset.index.name_to_video[vid_name]['id'] in config['data_gen']['train_vid_ids_bbn']]
+            val_vivids = [dset.index.name_to_video[vid_name]['id'] for vid_name in all_vids if dset.index.name_to_video[vid_name]['id'] in config['data_gen']['val_vid_ids_bbn']]
+            test_vivds = [dset.index.name_to_video[vid_name]['id'] for vid_name in all_vids if dset.index.name_to_video[vid_name]['id'] in config['data_gen']['test_vid_ids_bbn']]
+            # val_vivids = [dset.index.name_to_video[f"{task_name}-{index}"]['id'] for index in config['data_gen']['val_vid_ids_bbn'] if f"{task_name}-{index}" in dset.index.name_to_video.keys()]
+            # test_vivds = [dset.index.name_to_video[f"{task_name}-{index}"]['id'] for index in config['data_gen']['test_vid_ids_bbn'] if f"{task_name}-{index}" in dset.index.name_to_video.keys()]
             
         
         ## individual splits by gids
@@ -192,7 +216,10 @@ def main(task: str):
         val_dset = dset.subset(gids=val_img_ids, copy=True)
         test_dset = dset.subset(gids=test_img_ids, copy=True)
 
-    skill_data_root = f"{config['paths']['bbn_data_dir']}/Release_v0.5/v0.56/{TASK_TO_NAME[task]}/Data"
+    if data_type == "gyges":
+        skill_data_root = f"{config['paths']['bbn_data_dir']}/Release_v0.5/v0.56/{TASK_TO_NAME[task]}/Data"
+    elif data_type == "bbn":
+        skill_data_root = f"{config['paths']['bbn_data_dir']}/lab_data/{LAB_TASK_TO_NAME[task]}"
     # videos_names = os.listdir(skill_data_root)
     # for split in ["train_activity", "val", "test"]:
     for dset, split in zip([train_dset, val_dset, test_dset], ["train_activity", "val", "test"]):
@@ -217,37 +244,70 @@ def main(task: str):
             video_dset = dset.subset(gids=image_ids, copy=True)
             
             #### begin activity GT section
-            video_root = f"{skill_data_root}/{video_name}"
-            activity_gt_file = f"{video_root}/{video_name}.skill_labels_by_frame.txt"
+            if data_type == "gyges":
+                video_root = f"{skill_data_root}/{video_name}"
+                activity_gt_file = f"{video_root}/{video_name}.skill_labels_by_frame.txt"
+            elif data_type == "bbn":
+                activity_gt_file = f"{skill_data_root}/{video_name}.skill_labels_by_frame.txt"
+                if not os.path.exists(activity_gt_file):
+                    print(f"activity_gt_file {activity_gt_file} doesnt exists. Trying a different way")
+                    activity_gt_file = f"{skill_data_root}/{video_name}.txt"
             
             if not os.path.exists(activity_gt_file):
+                print(f"activity_gt_file {activity_gt_file} doesnt exists. continueing")
                 continue
             
             f = open(activity_gt_file, "r")
             text = f.read()
             f.close()
             
-            # print(f"str type: {type(text)}")
-            text = text.replace('\n', '\t')
-            text_list = text.split("\t")[:-1]
+            
+            # print(f"str type: {text}")
             
             activityi_gt_list = ["background" for x in range(num_images)]
-            for index in range(0, len(text_list), 3):
-                triplet = text_list[index:index+3]
-                # print(f"index: {index}, {text_list[index]}")
-                # print(f"triplet: {text_list[index:index+3]}")
-                start_frame = int(triplet[0])
-                end_frame = int(triplet[1])
-                desc = triplet[2]
-                gt_label = activity_labels_desc_mapping[desc]
-                
-                if end_frame-1 > num_images:
-                    ### address issue with GT activity labels
-                    print("Max frame in GT is larger than number of frames in the video")
+            # print(f"activity_gt_file: {activity_gt_file}")
+            # print(f"activity_labels_desc_mapping: {activity_labels_desc_mapping}")
+            # print(f"text_list: {text_list}")
+            if data_type == "gtges":
+                text = text.replace('\n', '\t')
+                text_list = text.split("\t")[:-1]
+                for index in range(0, len(text_list), 3):
+                    triplet = text_list[index:index+3]
+                    # print(f"index: {index}, {text_list[index]}")
+                    # print(f"triplet: {text_list[index:index+3]}")
+                    start_frame = int(triplet[0])
+                    end_frame = int(triplet[1])
+                    desc = triplet[2]
+                    gt_label = activity_labels_desc_mapping[desc]
                     
-                for label_index in range(start_frame, min(end_frame-1, num_images)):
-                    # print(f"label_index: {label_index}")
-                    activityi_gt_list[label_index] = gt_label
+                    if end_frame-1 > num_images:
+                        ### address issue with GT activity labels
+                        print("Max frame in GT is larger than number of frames in the video")
+                        
+                    for label_index in range(start_frame, min(end_frame-1, num_images)):
+                        # print(f"label_index: {label_index}")
+                        activityi_gt_list[label_index] = gt_label
+                    
+            elif data_type == "bbn":
+                text = text.replace('\n', '\t')
+                text_list = text.split("\t")#[:-1]
+                # print(f"text_list: {text_list}")
+                for index in range(0, len(text_list), 4):
+                    triplet = text_list[index:index+4]
+                    # print(f"index: {index}, {text_list[index]}")
+                    # print(f"triplet: {text_list[index:index+4]}")
+                    start_frame = int(triplet[0])
+                    end_frame = int(triplet[1])
+                    desc = triplet[3]
+                    gt_label = activity_labels_desc_mapping[desc]
+                    
+                    if end_frame-1 > num_images:
+                        ### address issue with GT activity labels
+                        print("Max frame in GT is larger than number of frames in the video")
+                        
+                    for label_index in range(start_frame, min(end_frame-1, num_images)):
+                        # print(f"label_index: {label_index}")
+                        activityi_gt_list[label_index] = gt_label
 
                 # print(f"start: {start_frame}, end: {end_frame}, label: {gt_label}, activityi_gt_list: {len(activityi_gt_list)}, num images: {num_images}")
             
@@ -347,5 +407,35 @@ def main(task: str):
     print(f"Saved training data to {output_data_dir}")
 
 if __name__ == '__main__':
-    task = "r18"
-    main(task=task)
+    
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--task",
+        help="Object detections in kwcoco format for the train set",
+        type=str,
+    )
+    
+    parser.add_argument(
+        "--ptg-root",
+        default='/home/local/KHQ/peri.akiva/angel_system',
+        help="root to angel_system",
+        type=str,
+    )
+    
+    parser.add_argument(
+        "--config-root",
+        default="/home/local/KHQ/peri.akiva/projects/TCN_HPL/configs",
+        help="root to TCN configs",
+        type=str,
+    )
+    
+    parser.add_argument(
+        "--data-type",
+        default="gyges",
+        help="gyges=proferssional data, bbn=use lab data",
+        type=str,
+    )
+    
+    args = parser.parse_args()
+    main(task=args.task, ptg_root=args.ptg_root, config_root=args.config_root, data_type=args.data_type)
