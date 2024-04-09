@@ -1,3 +1,7 @@
+# This script is designed for processing and preparing datasets for training activity classifiers.
+# It performs several key functions: reading configuration files, generating feature matrices,
+# preparing ground truth labels, and organizing the data into a structured format suitable for th TCN model.
+
 import os
 import yaml
 import glob
@@ -20,9 +24,19 @@ from angel_system.activity_classification.train_activity_classifier import (
     data_loader,
     compute_feats,
 )
-# from angel_system.data.data_paths import grab_data, data_dir
+
+
 
 def load_yaml_as_dict(yaml_path):
+    """
+    Loads a YAML file and returns it as a Python dictionary.
+
+    Args:
+        yaml_path (str): The path to the YAML configuration file.
+
+    Returns:
+        dict: The YAML file's content as a dictionary.
+    """
     with open(yaml_path, 'r') as f:
         config_dict = yaml.load(f, Loader=yaml.FullLoader)
     return config_dict
@@ -31,6 +45,7 @@ def load_yaml_as_dict(yaml_path):
 # Inputs
 #####################
 
+# Mapping task identifiers to their descriptive names.
 TASK_TO_NAME = {
     'm1': "M1_Trauma_Assessment",
     'm2': "M2_Tourniquet",
@@ -40,6 +55,7 @@ TASK_TO_NAME = {
     'r18': "R18_Chest_Seal",
 }
 
+# Mapping lab data task identifiers to their descriptive names.
 LAB_TASK_TO_NAME = {
     'm2': "M2_Lab_Skills",
     'm3': "M3_Lab_Skills",
@@ -47,6 +63,7 @@ LAB_TASK_TO_NAME = {
     'r18': "R18_Lab_Skills",
 }
 
+# Mapping feature settings to boolean flags indicating the inclusion of pose or object joint information.
 FEAT_TO_BOOL = {
         "no_pose": [False, False],
         "with_pose": [True, True],
@@ -56,6 +73,16 @@ FEAT_TO_BOOL = {
 
 
 def main(task: str, ptg_root: str, config_root: str, data_type: str):
+    """
+    Main function that orchestrates the process of loading configurations, setting up directories,
+    processing datasets, and generating features for training activity classification models.
+
+    Args:
+        task (str): The task identifier.
+        ptg_root (str): Path to the root of the angel_system project.
+        config_root (str): Path to the root of the configuration files.
+        data_type (str): Specifies the type of data, either 'gyges' for professional data or 'bbn' for lab data.
+    """
     config_path = f"{config_root}/experiment/{task}/feat_v6.yaml"
     config = load_yaml_as_dict(config_path)
 
@@ -65,12 +92,11 @@ def main(task: str, ptg_root: str, config_root: str, data_type: str):
     #####################
     # Output
     #####################
-    # reshuffle_datasets = True
-    # augment = False
-    # num_augs = 5
 
     reshuffle_datasets, augment, num_augs = config['data_gen']['reshuffle_datasets'], config['data_gen']['augment'], config['data_gen']['num_augs']
 
+    
+    ## augmentation is not currently used.
     if augment:
         num_augs = num_augs
         aug_trans_range, aug_rot_range = [-5, 5], [-5, 5]
@@ -78,7 +104,7 @@ def main(task: str, ptg_root: str, config_root: str, data_type: str):
         num_augs = 1
         aug_trans_range, aug_rot_range = None, None
 
-    
+    # the "data_type" parameter is new to the BBN lab data. old experiments dont have that parameter in their experiment name
     exp_name = f"p_{config['task']}_feat_v6_{config['data_gen']['feat_type']}_v3_aug_{augment}_reshuffle_{reshuffle_datasets}_{data_type}" #[p_m2_tqt_data_test_feat_v6_with_pose, p_m2_tqt_data_test_feat_v6_only_hands_joints, p_m2_tqt_data_test_feat_v6_only_objects_joints, p_m2_tqt_data_test_feat_v6_no_pose]
 
     output_data_dir = f"{config['paths']['output_data_dir_root']}/{config['task']}/{exp_name}"
@@ -127,7 +153,10 @@ def main(task: str, ptg_root: str, config_root: str, data_type: str):
     # bundles
     #####################
     ### create splits dsets
-
+    
+    # Data processing and feature generation based on the data type (gyges or bbn).
+    # The detailed implementation handles data loading, augmentation (if specified),
+    # ground truth preparation, feature computation, and data organization for training and evaluation.
     print(f"Generating features for task: {task}")
     
     if data_type == "gyges":
@@ -138,6 +167,8 @@ def main(task: str, ptg_root: str, config_root: str, data_type: str):
     if reshuffle_datasets:
         
         train_img_ids, val_img_ids, test_img_ids = [], [], []
+        
+        ## The data directory format is different for "Professional" and lab data, so we handle the split differently
         if data_type == "gyges":
             task_name = config['task'].upper()
             train_vidids = [dset.index.name_to_video[f"{task_name}-{index}"]['id'] for index in config['data_gen']['train_vid_ids'] if f"{task_name}-{index}" in dset.index.name_to_video.keys()]
@@ -160,32 +191,10 @@ def main(task: str, ptg_root: str, config_root: str, data_type: str):
         
         elif data_type == "bbn":
             task_name = config['task'].upper()
-            print(f"task name: {task_name}")
-            print(f"dset.index.name_to_video.keys(): {dset.index.name_to_video}")
             all_vids = sorted(list(dset.index.name_to_video.keys()))
-            print(f"all vids: {all_vids}")
             train_vidids = [dset.index.name_to_video[vid_name]['id'] for vid_name in all_vids if dset.index.name_to_video[vid_name]['id'] in config['data_gen']['train_vid_ids_bbn']]
             val_vivids = [dset.index.name_to_video[vid_name]['id'] for vid_name in all_vids if dset.index.name_to_video[vid_name]['id'] in config['data_gen']['val_vid_ids_bbn']]
             test_vivds = [dset.index.name_to_video[vid_name]['id'] for vid_name in all_vids if dset.index.name_to_video[vid_name]['id'] in config['data_gen']['test_vid_ids_bbn']]
-            # val_vivids = [dset.index.name_to_video[f"{task_name}-{index}"]['id'] for index in config['data_gen']['val_vid_ids_bbn'] if f"{task_name}-{index}" in dset.index.name_to_video.keys()]
-            # test_vivds = [dset.index.name_to_video[f"{task_name}-{index}"]['id'] for index in config['data_gen']['test_vid_ids_bbn'] if f"{task_name}-{index}" in dset.index.name_to_video.keys()]
-            
-        
-        ## individual splits by gids
-        # total = len(dset.index.imgs)
-        # inds = [i for i in range(1, total+1)]
-        # train_size, val_size = int(0.8*total), int(0.1*total)
-        # test_size = total - train_size - val_size
-        # train_inds = set(list(np.random.choice(inds, size=train_size, replace=False)))
-        # remaining_inds = list(set(inds) - train_inds)
-        # val_inds = set(list(np.random.choice(remaining_inds, size=val_size, replace=False)))
-        # test_inds = list(set(remaining_inds) - val_inds)
-        # # test_inds = list(np.random.choice(remaining_inds, size=test_size, replace=False))
-
-        # train_img_ids = [dset.index.imgs[i]['id'] for i in train_inds]
-        # val_img_ids = [dset.index.imgs[i]['id'] for i in val_inds]
-        # test_img_ids = [dset.index.imgs[i]['id'] for i in test_inds]
-        # print(f"train: {len(train_inds)}, val: {len(val_inds)}, test: {len(test_inds)}")
 
         for vid in train_vidids:
             if vid in dset.index.vidid_to_gids.keys():
@@ -199,7 +208,6 @@ def main(task: str, ptg_root: str, config_root: str, data_type: str):
                 val_img_ids.extend(list(dset.index.vidid_to_gids[vid]))
             else:
                 print(f"{vid} not in the val dataset")
-            # val_img_ids = set(val_img_ids) + set(dset.index.vidid_to_gids[vid])
 
         for vid in test_vivds:
             
@@ -216,19 +224,14 @@ def main(task: str, ptg_root: str, config_root: str, data_type: str):
         val_dset = dset.subset(gids=val_img_ids, copy=True)
         test_dset = dset.subset(gids=test_img_ids, copy=True)
 
+    # again, both data types use different directory formatting. We handle both here
     if data_type == "gyges":
         skill_data_root = f"{config['paths']['bbn_data_dir']}/Release_v0.5/v0.56/{TASK_TO_NAME[task]}/Data"
     elif data_type == "bbn":
         skill_data_root = f"{config['paths']['bbn_data_dir']}/lab_data/{LAB_TASK_TO_NAME[task]}"
-    # videos_names = os.listdir(skill_data_root)
-    # for split in ["train_activity", "val", "test"]:
+
     for dset, split in zip([train_dset, val_dset, test_dset], ["train_activity", "val", "test"]):
-        # org_num_vidoes = len(list(dset.index.videos.keys()))
-        # new_num_videos = 0
         for video_id in ub.ProgIter(dset.index.videos.keys()):
-            
-            # if video_id != 10:
-            #     continue
             
             video = dset.index.videos[video_id]
             video_name = video["name"]
@@ -243,7 +246,9 @@ def main(task: str, ptg_root: str, config_root: str, data_type: str):
 
             video_dset = dset.subset(gids=image_ids, copy=True)
             
-            #### begin activity GT section
+            # begin activity GT section
+            # The GT given data is provided in different formats for the lab and professional data collections.
+            # we handle both here.
             if data_type == "gyges":
                 video_root = f"{skill_data_root}/{video_name}"
                 activity_gt_file = f"{video_root}/{video_name}.skill_labels_by_frame.txt"
@@ -261,14 +266,9 @@ def main(task: str, ptg_root: str, config_root: str, data_type: str):
             text = f.read()
             f.close()
             
-            
-            # print(f"str type: {text}")
-            
             activityi_gt_list = ["background" for x in range(num_images)]
-            # print(f"activity_gt_file: {activity_gt_file}")
-            # print(f"activity_labels_desc_mapping: {activity_labels_desc_mapping}")
-            # print(f"text_list: {text_list}")
-            if data_type == "gtges":
+            
+            if data_type == "gyges":
                 text = text.replace('\n', '\t')
                 text_list = text.split("\t")[:-1]
                 for index in range(0, len(text_list), 3):
@@ -285,17 +285,13 @@ def main(task: str, ptg_root: str, config_root: str, data_type: str):
                         print("Max frame in GT is larger than number of frames in the video")
                         
                     for label_index in range(start_frame, min(end_frame-1, num_images)):
-                        # print(f"label_index: {label_index}")
                         activityi_gt_list[label_index] = gt_label
                     
             elif data_type == "bbn":
                 text = text.replace('\n', '\t')
                 text_list = text.split("\t")#[:-1]
-                # print(f"text_list: {text_list}")
                 for index in range(0, len(text_list), 4):
                     triplet = text_list[index:index+4]
-                    # print(f"index: {index}, {text_list[index]}")
-                    # print(f"triplet: {text_list[index:index+4]}")
                     start_frame = int(triplet[0])
                     end_frame = int(triplet[1])
                     desc = triplet[3]
@@ -335,7 +331,6 @@ def main(task: str, ptg_root: str, config_root: str, data_type: str):
             
             #### end activity GT section
             
-
             # features
             (
                 act_map,
