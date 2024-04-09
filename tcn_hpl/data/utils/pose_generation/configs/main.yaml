@@ -1,4 +1,5 @@
-task: m3
+task: r18
+data_type: bbn #[lab, pro]
 root: /data/PTG/medical/bbn_data/Release_v0.5/v0.52/M2_Tourniquet/Data
 img_save_path: /data/users/peri.akiva/datasets/m2_tourniquet/imgs
 pose_model_config: /home/local/KHQ/peri.akiva/projects/TCN_HPL/tcn_hpl/data/utils/pose_generation/configs/ViTPose_base_medic_casualty_256x192.py
@@ -20,5 +21,6 @@ data:
   m5: /data/PTG/medical/training/yolo_object_detector/detect//m5_all/m5_all_all_obj_results.mscoco.json
   r18: /data/PTG/medical/training/yolo_object_detector/detect//r18_all/r18_all_all_obj_results.mscoco.json
   save_root: /data/users/peri.akiva/datasets/ptg
-
-  
+bbn_lab:
+  r18: /data/PTG/medical/training/yolo_object_detector/detect//r18_all_bbn_lab_data/r18_all_bbn_lab_data_all_obj_results.mscoco.json
+  save_root: /data/users/peri.akiva/datasets/ptg

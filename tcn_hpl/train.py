@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import hydra
 import rootutils
 import torch
+
 # import lightning as L
 # from lightning import Callback, LightningDataModule, LightningModule, Trainer
 # from lightning.pytorch.loggers import Logger
@@ -56,7 +57,7 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     # print(f"datamodule: {datamodule.__dict__}")
     # exit()
-    
+
     log.info(f"Instantiating model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(cfg.model)
 
@@ -67,7 +68,9 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     logger: List[Logger] = utils.instantiate_loggers(cfg.get("logger"))
 
     log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
-    trainer: Trainer = hydra.utils.instantiate(cfg.trainer, callbacks=callbacks, logger=logger)
+    trainer: Trainer = hydra.utils.instantiate(
+        cfg.trainer, callbacks=callbacks, logger=logger
+    )
 
     object_dict = {
         "cfg": cfg,

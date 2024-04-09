@@ -10,7 +10,14 @@ class MoveCenterPts(torch.nn.Module):
     """
 
     def __init__(
-        self, hand_dist_delta, obj_dist_delta, window_size, im_w, im_h, num_obj_classes, feat_version
+        self,
+        hand_dist_delta,
+        obj_dist_delta,
+        window_size,
+        im_w,
+        im_h,
+        num_obj_classes,
+        feat_version,
     ):
         """
         :param hand_dist_delta: Decimal percentage to calculate the +-offset in
@@ -116,21 +123,19 @@ class MoveCenterPts(torch.nn.Module):
 
             elif self.feat_version == 3:
                 # Right and left hand distances
-                right_idx1 = 1; right_idx2 = 2; 
-                left_idx1 = 4; left_idx2 = 5
+                right_idx1 = 1
+                right_idx2 = 2
+                left_idx1 = 4
+                left_idx2 = 5
                 for hand_delta_x, hand_delta_y, start_idx, end_idx in zip(
                     [rhand_delta_x, lhand_delta_x],
                     [rhand_delta_y, lhand_delta_y],
                     [right_idx1, left_idx1],
                     [right_idx2, left_idx2],
                 ):
-                    frame[start_idx] = (
-                        frame[start_idx] + hand_delta_x
-                    )
-                    
-                    frame[end_idx] = (
-                        frame[end_idx] + hand_delta_y
-                    )
+                    frame[start_idx] = frame[start_idx] + hand_delta_x
+
+                    frame[end_idx] = frame[end_idx] + hand_delta_y
 
                 # Object distances
                 start_idx = 10
@@ -260,10 +265,12 @@ class NormalizePixelPts(torch.nn.Module):
                 )
 
             # Distance between hands
-            hands_dist_idx = left_dist_idx2 
+            hands_dist_idx = left_dist_idx2
 
             features[:, hands_dist_idx] = features[:, hands_dist_idx] / self.im_w
-            features[:, hands_dist_idx + 1] = features[:, hands_dist_idx + 1] / self.im_h
+            features[:, hands_dist_idx + 1] = (
+                features[:, hands_dist_idx + 1] / self.im_h
+            )
 
         elif self.feat_version == 3:
             # Distances are from the center, skip
@@ -278,9 +285,10 @@ class NormalizePixelPts(torch.nn.Module):
         detail = f"(im_w={self.im_w}, im_h={self.im_h}, num_obj_classes={self.num_obj_classes}, feat_version={self.feat_version})"
         return f"{self.__class__.__name__}{detail}"
 
+
 class NormalizeFromCenter(torch.nn.Module):
     """Normalize the distances from -1 to 1 with respect to the image center
-    
+
     Missing objects will be set to (2, 2)
     """
 
@@ -310,19 +318,17 @@ class NormalizeFromCenter(torch.nn.Module):
 
         elif self.feat_version == 3:
             # Right and left hand distances
-            right_idx1 = 1; right_idx2 = 2; 
-            left_idx1 = 4; left_idx2 = 5
+            right_idx1 = 1
+            right_idx2 = 2
+            left_idx1 = 4
+            left_idx2 = 5
             for start_idx, end_idx in zip(
                 [right_idx1, left_idx1],
                 [right_idx2, left_idx2],
             ):
-            
-                features[:, start_idx] = (
-                    features[:, start_idx] / self.half_w
-                )
-                features[:, end_idx] = (
-                    features[:, end_idx] / self.half_h
-                )
+
+                features[:, start_idx] = features[:, start_idx] / self.half_w
+                features[:, end_idx] = features[:, end_idx] / self.half_h
 
             # Object distances
             start_idx = 10
@@ -337,6 +343,7 @@ class NormalizeFromCenter(torch.nn.Module):
         return features
 
     def __repr__(self) -> str:
-        detail = f"(im_w={self.im_w}, im_h={self.im_h}, feat_version={self.feat_version})"
+        detail = (
+            f"(im_w={self.im_w}, im_h={self.im_h}, feat_version={self.feat_version})"
+        )
         return f"{self.__class__.__name__}{detail}"
-   

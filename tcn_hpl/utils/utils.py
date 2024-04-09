@@ -20,9 +20,10 @@ def load_yaml_as_dict(yaml_path: str) -> dict:
     Returns:
         dict: A dictionary containing the configuration settings.
     """
-    with open(yaml_path, 'r') as f:
+    with open(yaml_path, "r") as f:
         config_dict = yaml.load(f, Loader=yaml.FullLoader)
     return config_dict
+
 
 def dictionary_contents(path: str, types: list, recursive: bool = False) -> list:
     """
@@ -47,6 +48,7 @@ def dictionary_contents(path: str, types: list, recursive: bool = False) -> list
             for x in glob(path + type):
                 files.append(os.path.join(path, x))
     return files
+
 
 def extras(cfg: DictConfig) -> None:
     """Applies optional utilities before the task is started.
