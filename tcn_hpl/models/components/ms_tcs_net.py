@@ -64,7 +64,8 @@ class MultiStageModel(nn.Module):
         # self.fc = nn.Linear(1280, 2048)
 
     def forward(self, x, mask):
-        b, d, c = x.shape
+        b, d, c = x.shape #[batch_size, feat_dim, window_size]
+        # mask shape: [batch_size, window_size]
         # print(f"x: {x.shape}")
         # print(f"mask: {mask.shape}")
         

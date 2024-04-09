@@ -38,7 +38,7 @@ model:
     dim: 188 # length of feature vector
 
 data:
-  num_classes: 9 # activities: includes background
+  num_classes: 6 # activities: includes background
   batch_size: 512
   num_workers: 0
   epoch_length: 20000
@@ -51,12 +51,12 @@ data:
 
     MoveCenterPts:
         feat_version: 6
-        num_obj_classes: 9 # not including background
+        num_obj_classes: 4 # not including background
     NormalizeFromCenter:
       feat_version: 6
     NormalizePixelPts:
       feat_version: 6
-      num_obj_classes: 9 # not including background
+      num_obj_classes: 4 # not including background
 
 data_gen:
   reshuffle_datasets: true

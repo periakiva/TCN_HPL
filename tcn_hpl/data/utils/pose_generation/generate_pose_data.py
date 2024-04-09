@@ -43,9 +43,15 @@ class PosesGenerator(object):
         self.config = config
         self.root_path = config['root']
         
-        self.dataset = kwcoco.CocoDataset(config['data'][config['task']])
+        if config['data_type'] == "bbn":
+            self.config_data_key = "bbn_lab"
+        else:
+            self.config_data_key = "data"
+            
+        self.dataset = kwcoco.CocoDataset(config[self.config_data_key][config['task']])
         self.patient_cid = self.dataset.add_category('patient')
         self.user_cid = self.dataset.add_category('user')
+        
         
         self.keypoints_cats = [
                         "nose", "mouth", "throat","chest","stomach","left_upper_arm",
@@ -59,7 +65,7 @@ class PosesGenerator(object):
         
         self.dataset.dataset['keypoint_categories'] = self.keypoints_cats_dset
         
-        self.dataset_path_name = self.config['data'][self.config['task']][:-12].split('/')[-1] #remove .mscoco.json
+        self.dataset_path_name = self.config[self.config_data_key][self.config['task']][:-12].split('/')[-1] #remove .mscoco.json
         
         self.args = get_parser(self.config['detection_model_config']).parse_args()
         detecron_cfg = setup_detectron_cfg(self.args)
@@ -257,13 +263,13 @@ class PosesGenerator(object):
             # import matplotlib.pyplot as plt
             # image_show = dset.draw_image(gid=img_id)
             # plt.imshow(image_show)
-            # plt.savefig(f"myfig_{self.config['task']}_{index}.png")
+            # plt.savefig(f"figs/myfig_{self.config['task']}_{index}.png")
             # if index >= 20:
             #     exit()
             
             if save_intermediate:
                 if (index % 45000) == 0:
-                    dset_inter_name = f"{self.config['data']['save_root']}/{self.dataset_path_name}_{index}_with_dets_and_pose.mscoco.json"
+                    dset_inter_name = f"{self.config[self.config_data_key]['save_root']}/{self.dataset_path_name}_{index}_with_dets_and_pose.mscoco.json"
                     self.dataset.dump(dset_inter_name, newlines=True)
                     print(f"Saved intermediate dataset at index {index} to: {dset_inter_name}")
                     
@@ -293,7 +299,7 @@ class PosesGenerator(object):
         """
         self.dataset = self.generate_bbs_and_pose(self.dataset)
         
-        dataset_path_with_pose = f"{self.config['data']['save_root']}/{self.dataset_path_name}_with_dets_and_pose.mscoco.json"        
+        dataset_path_with_pose = f"{self.config[self.config_data_key]['save_root']}/{self.dataset_path_name}_with_dets_and_pose.mscoco.json"        
         self.dataset.dump(dataset_path_with_pose, newlines=True)
         print(f"Saved test dataset to: {dataset_path_with_pose}")
         return
