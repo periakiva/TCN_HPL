@@ -9,16 +9,18 @@ from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
 from detectron2.utils.logger import setup_logger
 from tcn_hpl.data.utils.pose_generation.predictor import VisualizationDemo
+
 # import tcn_hpl.utils.utils as utils
-from mmpose.apis import (inference_top_down_pose_model, init_pose_model,
-                         vis_pose_result)
+from mmpose.apis import inference_top_down_pose_model, init_pose_model, vis_pose_result
 from tcn_hpl.data.utils.pose_generation.utils import get_parser, load_yaml_as_dict
 import kwcoco
 from mmpose.datasets import DatasetInfo
+
 # print(f"utils: {utils.__file__}")
 
 
 import warnings
+
 warnings.filterwarnings("ignore")
 
 
@@ -33,7 +35,9 @@ def setup_detectron_cfg(args):
     # Set score_threshold for builtin models
     cfg.MODEL.RETINANET.SCORE_THRESH_TEST = args.confidence_threshold
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = args.confidence_threshold
-    cfg.MODEL.PANOPTIC_FPN.COMBINE.INSTANCES_CONFIDENCE_THRESH = args.confidence_threshold
+    cfg.MODEL.PANOPTIC_FPN.COMBINE.INSTANCES_CONFIDENCE_THRESH = (
+        args.confidence_threshold
+    )
     cfg.freeze()
     return cfg
 
@@ -41,119 +45,153 @@ def setup_detectron_cfg(args):
 class PosesGenerator(object):
     def __init__(self, config: dict) -> None:
         self.config = config
-        self.root_path = config['root']
-        
-        if config['data_type'] == "bbn":
+        self.root_path = config["root"]
+
+        if config["data_type"] == "lab":
             self.config_data_key = "bbn_lab"
         else:
             self.config_data_key = "data"
-            
-        self.dataset = kwcoco.CocoDataset(config[self.config_data_key][config['task']])
-        self.patient_cid = self.dataset.add_category('patient')
-        self.user_cid = self.dataset.add_category('user')
-        
-        
+
+        self.dataset = kwcoco.CocoDataset(config[self.config_data_key][config["task"]])
+        self.patient_cid = self.dataset.add_category("patient")
+        self.user_cid = self.dataset.add_category("user")
+
         self.keypoints_cats = [
-                        "nose", "mouth", "throat","chest","stomach","left_upper_arm",
-                        "right_upper_arm","left_lower_arm","right_lower_arm","left_wrist",
-                        "right_wrist","left_hand","right_hand","left_upper_leg",
-                        "right_upper_leg","left_knee","right_knee","left_lower_leg", 
-                        "right_lower_leg", "left_foot", "right_foot", "back"
-                    ]
-    
-        self.keypoints_cats_dset = [{'name': value, 'id': index} for index, value in enumerate(self.keypoints_cats)]
-        
-        self.dataset.dataset['keypoint_categories'] = self.keypoints_cats_dset
-        
-        self.dataset_path_name = self.config[self.config_data_key][self.config['task']][:-12].split('/')[-1] #remove .mscoco.json
-        
-        self.args = get_parser(self.config['detection_model_config']).parse_args()
+            "nose",
+            "mouth",
+            "throat",
+            "chest",
+            "stomach",
+            "left_upper_arm",
+            "right_upper_arm",
+            "left_lower_arm",
+            "right_lower_arm",
+            "left_wrist",
+            "right_wrist",
+            "left_hand",
+            "right_hand",
+            "left_upper_leg",
+            "right_upper_leg",
+            "left_knee",
+            "right_knee",
+            "left_lower_leg",
+            "right_lower_leg",
+            "left_foot",
+            "right_foot",
+            "back",
+        ]
+
+        self.keypoints_cats_dset = [
+            {"name": value, "id": index}
+            for index, value in enumerate(self.keypoints_cats)
+        ]
+
+        self.dataset.dataset["keypoint_categories"] = self.keypoints_cats_dset
+
+        self.dataset_path_name = self.config[self.config_data_key][self.config["task"]][
+            :-12
+        ].split("/")[
+            -1
+        ]  # remove .mscoco.json
+
+        self.args = get_parser(self.config["detection_model_config"]).parse_args()
         detecron_cfg = setup_detectron_cfg(self.args)
         self.predictor = VisualizationDemo(detecron_cfg)
-        
-        self.pose_model = init_pose_model(config['pose_model_config'], 
-                                     config['pose_model_checkpoint'], 
-                                     device=config['device'])
 
-        self.pose_dataset = self.pose_model.cfg.data['test']['type']
-        self.pose_dataset_info = self.pose_model.cfg.data['test'].get('dataset_info', None)
+        self.pose_model = init_pose_model(
+            config["pose_model_config"],
+            config["pose_model_checkpoint"],
+            device=config["device"],
+        )
+
+        self.pose_dataset = self.pose_model.cfg.data["test"]["type"]
+        self.pose_dataset_info = self.pose_model.cfg.data["test"].get(
+            "dataset_info", None
+        )
         if self.pose_dataset_info is None:
             warnings.warn(
-                'Please set `dataset_info` in the config.'
-                'Check https://github.com/open-mmlab/mmpose/pull/663 for details.',
-                DeprecationWarning)
+                "Please set `dataset_info` in the config."
+                "Check https://github.com/open-mmlab/mmpose/pull/663 for details.",
+                DeprecationWarning,
+            )
         else:
             self.pose_dataset_info = DatasetInfo(self.pose_dataset_info)
-    
+
     def predict_single(self, image: torch.tensor) -> list:
-        
+
         predictions, _ = self.predictor.run_on_image(image)
-        instances = predictions["instances"].to('cpu')
+        instances = predictions["instances"].to("cpu")
         boxes = instances.pred_boxes if instances.has("pred_boxes") else None
         scores = instances.scores if instances.has("scores") else None
-        classes = instances.pred_classes.tolist() if instances.has("pred_classes") else None
-        
+        classes = (
+            instances.pred_classes.tolist() if instances.has("pred_classes") else None
+        )
+
         boxes_list, labels_list, keypoints_list = [], [], []
-        
+
         if boxes is not None:
-                
+
             # person_results = []
             for box_id, _bbox in enumerate(boxes):
-                
+
                 box_class = classes[box_id]
                 if box_class == 0:
                     pred_class = self.patient_cid
-                    pred_label = 'patient'
+                    pred_label = "patient"
                 elif box_class == 1:
                     pred_class = self.user_cid
-                    pred_label = 'user'
-                
+                    pred_label = "user"
+
                 boxes_list.append(np.asarray(_bbox).tolist())
                 labels_list.append(pred_label)
-                
-                
+
                 current_ann = {}
                 # current_ann['id'] = ann_id
-                current_ann['image_id'] = 0
-                current_ann['bbox'] = np.asarray(_bbox).tolist()#_bbox
-                current_ann['category_id'] = pred_class
-                current_ann['label'] = pred_label
-                current_ann['bbox_score'] = f"{scores[box_id] * 100:0.2f}"
-                
+                current_ann["image_id"] = 0
+                current_ann["bbox"] = np.asarray(_bbox).tolist()  # _bbox
+                current_ann["category_id"] = pred_class
+                current_ann["label"] = pred_label
+                current_ann["bbox_score"] = f"{scores[box_id] * 100:0.2f}"
+
                 if box_class == 0:
                     person_results = [current_ann]
-                    
+
                     pose_results, returned_outputs = inference_top_down_pose_model(
-                                                                                    model=self.pose_model,
-                                                                                    img_or_path=image,
-                                                                                    person_results=person_results,
-                                                                                    bbox_thr=None,
-                                                                                    format='xyxy',
-                                                                                    dataset=self.pose_dataset,
-                                                                                    dataset_info=self.pose_dataset_info,
-                                                                                    return_heatmap=False,
-                                                                                    outputs=['backbone'])
-                    
-                    pose_keypoints = pose_results[0]['keypoints'].tolist()
+                        model=self.pose_model,
+                        img_or_path=image,
+                        person_results=person_results,
+                        bbox_thr=None,
+                        format="xyxy",
+                        dataset=self.pose_dataset,
+                        dataset_info=self.pose_dataset_info,
+                        return_heatmap=False,
+                        outputs=["backbone"],
+                    )
+
+                    pose_keypoints = pose_results[0]["keypoints"].tolist()
                     pose_keypoints_list = []
                     for kp_index, keypoint in enumerate(pose_keypoints):
-                        kp_dict = {'xy': [keypoint[0], keypoint[1]], 
-                                'keypoint_category_id': kp_index, 
-                                'keypoint_category': self.keypoints_cats[kp_index]}
+                        kp_dict = {
+                            "xy": [keypoint[0], keypoint[1]],
+                            "keypoint_category_id": kp_index,
+                            "keypoint_category": self.keypoints_cats[kp_index],
+                        }
                         pose_keypoints_list.append(kp_dict)
-                    
+
                     keypoints_list.append(pose_keypoints_list)
                     # print(f"pose_keypoints_list: {pose_keypoints_list}")
-                    current_ann['keypoints'] = pose_keypoints_list
+                    current_ann["keypoints"] = pose_keypoints_list
                     # current_ann['image_features'] = image_features
-                
+
                 # dset.add_annotation(**current_ann)
-        
+
         # results = []
         return boxes_list, labels_list, keypoints_list
-    
-    def generate_bbs_and_pose(self, dset: kwcoco.CocoDataset, save_intermediate: bool =True) -> kwcoco.CocoDataset:
-        
+
+    def generate_bbs_and_pose(
+        self, dset: kwcoco.CocoDataset, save_intermediate: bool = True
+    ) -> kwcoco.CocoDataset:
+
         """
         Generates a CocoDataset with bounding box (bbs) and pose annotations generated from the dataset's images.
         This method processes each image, detects bounding boxes and classifies them into 'patient' or 'user' categories,
@@ -180,101 +218,115 @@ class PosesGenerator(object):
         - The `kwcoco.CocoDataset` class is part of the `kwcoco` package, offering structured management of COCO-format
         datasets, including easy addition of annotations and categories, and saving/loading datasets.
         """
-    
+
         # patient_cid = self.dataset.add_category('patient')
         # user_cid = self.dataset.add_category('user')
-        pbar = tqdm.tqdm(enumerate(self.dataset.imgs.items()), total=len(list(self.dataset.imgs.keys())))
-        
+        pbar = tqdm.tqdm(
+            enumerate(self.dataset.imgs.items()),
+            total=len(list(self.dataset.imgs.keys())),
+        )
+
         for index, (img_id, img_dict) in pbar:
-            
-            path = img_dict['file_name']
-            
+
+            path = img_dict["file_name"]
+
             img = read_image(path, format="BGR")
-            
+
             # bs, ls, kps = self.predict_single(img)
-            
+
             # print(f"boxes: {bs}")
             # print(f"ls: {ls}")
             # print(f"kps: {kps}")
-            
+
             # continue
-            
+
             predictions, visualized_output = self.predictor.run_on_image(img)
-            
-            instances = predictions["instances"].to('cpu')
+
+            instances = predictions["instances"].to("cpu")
             boxes = instances.pred_boxes if instances.has("pred_boxes") else None
             scores = instances.scores if instances.has("scores") else None
-            classes = instances.pred_classes.tolist() if instances.has("pred_classes") else None
-            
+            classes = (
+                instances.pred_classes.tolist()
+                if instances.has("pred_classes")
+                else None
+            )
+
             boxes = boxes.tensor.detach().numpy()
             scores = scores.numpy()
-            
-            file_name = path.split('/')[-1]
-            
+
+            file_name = path.split("/")[-1]
+
             if boxes is not None:
-                
+
                 # person_results = []
                 for box_id, _bbox in enumerate(boxes):
-                    
+
                     box_class = classes[box_id]
                     if box_class == 0:
                         pred_class = self.patient_cid
-                        pred_label = 'patient'
+                        pred_label = "patient"
                     elif box_class == 1:
                         pred_class = self.user_cid
-                        pred_label = 'user'
-                        
+                        pred_label = "user"
+
                     current_ann = {}
                     # current_ann['id'] = ann_id
-                    current_ann['image_id'] = img_id
-                    current_ann['bbox'] = np.asarray(_bbox).tolist()#_bbox
-                    current_ann['category_id'] = pred_class
-                    current_ann['label'] = pred_label
-                    current_ann['bbox_score'] = str(round(scores[box_id] * 100,2)) + '%'
-                    
+                    current_ann["image_id"] = img_id
+                    current_ann["bbox"] = np.asarray(_bbox).tolist()  # _bbox
+                    current_ann["category_id"] = pred_class
+                    current_ann["label"] = pred_label
+                    current_ann["bbox_score"] = (
+                        str(round(scores[box_id] * 100, 2)) + "%"
+                    )
+
                     if box_class == 0:
                         person_results = [current_ann]
-                        
+
                         pose_results, returned_outputs = inference_top_down_pose_model(
-                                                                                        self.pose_model,
-                                                                                        path,
-                                                                                        person_results,
-                                                                                        bbox_thr=None,
-                                                                                        format='xyxy',
-                                                                                        dataset=self.pose_dataset,
-                                                                                        dataset_info=self.pose_dataset_info,
-                                                                                        return_heatmap=None,
-                                                                                        outputs=['backbone'])
-                        
-                        pose_keypoints = pose_results[0]['keypoints'].tolist()
+                            self.pose_model,
+                            path,
+                            person_results,
+                            bbox_thr=None,
+                            format="xyxy",
+                            dataset=self.pose_dataset,
+                            dataset_info=self.pose_dataset_info,
+                            return_heatmap=None,
+                            outputs=["backbone"],
+                        )
+
+                        pose_keypoints = pose_results[0]["keypoints"].tolist()
                         pose_keypoints_list = []
                         for kp_index, keypoint in enumerate(pose_keypoints):
-                            kp_dict = {'xy': [keypoint[0], keypoint[1]], 
-                                    'keypoint_category_id': kp_index, 
-                                    'keypoint_category': self.keypoints_cats[kp_index]}
+                            kp_dict = {
+                                "xy": [keypoint[0], keypoint[1]],
+                                "keypoint_category_id": kp_index,
+                                "keypoint_category": self.keypoints_cats[kp_index],
+                            }
                             pose_keypoints_list.append(kp_dict)
-                        
+
                         # print(f"pose_keypoints_list: {pose_keypoints_list}")
-                        current_ann['keypoints'] = pose_keypoints_list
+                        current_ann["keypoints"] = pose_keypoints_list
                         # current_ann['image_features'] = image_features
-                    
+
                     self.dataset.add_annotation(**current_ann)
-            
+
             # import matplotlib.pyplot as plt
             # image_show = dset.draw_image(gid=img_id)
             # plt.imshow(image_show)
             # plt.savefig(f"figs/myfig_{self.config['task']}_{index}.png")
             # if index >= 20:
             #     exit()
-            
+
             if save_intermediate:
                 if (index % 45000) == 0:
                     dset_inter_name = f"{self.config[self.config_data_key]['save_root']}/{self.dataset_path_name}_{index}_with_dets_and_pose.mscoco.json"
                     self.dataset.dump(dset_inter_name, newlines=True)
-                    print(f"Saved intermediate dataset at index {index} to: {dset_inter_name}")
-                    
+                    print(
+                        f"Saved intermediate dataset at index {index} to: {dset_inter_name}"
+                    )
+
         return self.dataset
-        
+
     def run(self) -> None:
         """
         Executes the process of generating bounding box and pose annotations for a dataset and then saves the
@@ -298,19 +350,21 @@ class PosesGenerator(object):
         processing expected by `generate_bbs_and_pose`.
         """
         self.dataset = self.generate_bbs_and_pose(self.dataset)
-        
-        dataset_path_with_pose = f"{self.config[self.config_data_key]['save_root']}/{self.dataset_path_name}_with_dets_and_pose.mscoco.json"        
+
+        dataset_path_with_pose = f"{self.config[self.config_data_key]['save_root']}/{self.dataset_path_name}_with_dets_and_pose.mscoco.json"
         self.dataset.dump(dataset_path_with_pose, newlines=True)
         print(f"Saved test dataset to: {dataset_path_with_pose}")
         return
 
+
 def main():
-    
+
     main_config_path = f"configs/main.yaml"
     config = load_yaml_as_dict(main_config_path)
 
     PG = PosesGenerator(config)
     PG.run()
-    
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     main()

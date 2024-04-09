@@ -9,33 +9,37 @@ At this point this script is not needed.
 import os
 import cv2
 from glob import glob
-import json 
+import json
 import utils
-
-
 
 
 def main():
     # the dir including videos you want to process
-    videos_src_path = '/data/datasets/ptg/m2_tourniquet/'
+    videos_src_path = "/data/datasets/ptg/m2_tourniquet/"
     # the save path
-    videos_save_path = '/data/datasets/ptg/m2_tourniquet/imgs'
+    videos_save_path = "/data/datasets/ptg/m2_tourniquet/imgs"
 
-    videos = utils.dictionary_contents(videos_src_path, types=['*.mp4', '*.MP4'], recursive=True)
+    videos = utils.dictionary_contents(
+        videos_src_path, types=["*.mp4", "*.MP4"], recursive=True
+    )
     # print(videos)
     # exit()
     # videos = filter(lambda x: x.endswith('MP4'), videos)
-    coco_json = {"info": {"description": "Medical Pose Estimation",
-                        "year": 2023,
-                        "contributer": "Kitware",
-                        "version": "0.1"},
-                "images": [],
-                "annotations": []}
+    coco_json = {
+        "info": {
+            "description": "Medical Pose Estimation",
+            "year": 2023,
+            "contributer": "Kitware",
+            "version": "0.1",
+        },
+        "images": [],
+        "annotations": [],
+    }
 
     for index, each_video in enumerate(videos):
         # get the name of each video, and make the directory to save frames
-        video_name = each_video.split('/')[-1].split('.')[0]
-        print('Video Name :', video_name)
+        video_name = each_video.split("/")[-1].split(".")[0]
+        print("Video Name :", video_name)
         # each_video_name, _ = each_video.split('.')each_video.split('.')
         dir_path = f"{videos_save_path}/{video_name}"
         utils.create_dir_if_doesnt_exist(dir_path)
@@ -52,7 +56,7 @@ def main():
         success = True
         # 计数
         num = 0
-        while (success):
+        while success:
             success, frame = cap.read()
             if success == True:
                 # if not os.path.exists(each_video_save_full_path + video_name):
@@ -76,14 +80,14 @@ def main():
                     num += 1
 
             frame_count = frame_count + 1
-        print('Final frame:', num)
+        print("Final frame:", num)
 
     # coco_json_save_path = f"{videos_src_path}/medical_coco.json"
     coco_json_save_path = "medical_coco.json"
 
-    with open(coco_json_save_path, "w") as outfile: 
+    with open(coco_json_save_path, "w") as outfile:
         json.dump(coco_json, outfile)
+
 
 if __name__ == "__main__":
     main()
-

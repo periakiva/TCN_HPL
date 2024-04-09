@@ -86,16 +86,14 @@ class PTGDataModule(LightningDataModule):
 
         # data transformations
         transforms_list = []
-        for transform_name in all_transforms['train_order']:
+        for transform_name in all_transforms["train_order"]:
             transforms_list.append(all_transforms[transform_name])
         self.train_transform = transforms.Compose(transforms_list)
 
-
         transforms_list = []
-        for transform_name in all_transforms['test_order']:
+        for transform_name in all_transforms["test_order"]:
             transforms_list.append(all_transforms[transform_name])
         self.val_transform = transforms.Compose(transforms_list)
-
 
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
@@ -133,10 +131,15 @@ class PTGDataModule(LightningDataModule):
         if not self.data_train and not self.data_val and not self.data_test:
             exp_data = self.hparams.data_dir
 
-
-            vid_list_file = f"{exp_data}/splits/train_activity.split{self.hparams.split}.bundle"
-            vid_list_file_val = f"{exp_data}/splits/val.split{self.hparams.split}.bundle"
-            vid_list_file_tst = f"{exp_data}/splits/test.split{self.hparams.split}.bundle"
+            vid_list_file = (
+                f"{exp_data}/splits/train_activity.split{self.hparams.split}.bundle"
+            )
+            vid_list_file_val = (
+                f"{exp_data}/splits/val.split{self.hparams.split}.bundle"
+            )
+            vid_list_file_tst = (
+                f"{exp_data}/splits/test.split{self.hparams.split}.bundle"
+            )
 
             features_path = f"{exp_data}/features/"
             gt_path = f"{exp_data}/groundTruth/"
@@ -159,7 +162,6 @@ class PTGDataModule(LightningDataModule):
             with open(vid_list_file, "r") as train_f:
                 train_videos = train_f.read().split("\n")[:-1]
 
-            
             # print(f"train_vids: {train_videos}")
             # exit()
             # Load validation vidoes
@@ -171,26 +173,40 @@ class PTGDataModule(LightningDataModule):
                 test_videos = test_f.read().split("\n")[:-1]
 
             self.data_train = PTG_Dataset(
-                train_videos, self.hparams.num_classes, actions_dict, gt_path,
-                features_path, self.hparams.sample_rate, self.hparams.window_size,
-                transform=self.train_transform
+                train_videos,
+                self.hparams.num_classes,
+                actions_dict,
+                gt_path,
+                features_path,
+                self.hparams.sample_rate,
+                self.hparams.window_size,
+                transform=self.train_transform,
             )
-            
+
             # print(f"size:{self.data_train.__len__()}")
             # exit()
 
             self.data_val = PTG_Dataset(
-                val_videos, self.hparams.num_classes, actions_dict, gt_path,
-                features_path, self.hparams.sample_rate, self.hparams.window_size,
-                transform=self.val_transform
+                val_videos,
+                self.hparams.num_classes,
+                actions_dict,
+                gt_path,
+                features_path,
+                self.hparams.sample_rate,
+                self.hparams.window_size,
+                transform=self.val_transform,
             )
 
             self.data_test = PTG_Dataset(
-                test_videos, self.hparams.num_classes, actions_dict, gt_path,
-                features_path, self.hparams.sample_rate, self.hparams.window_size,   
-                transform=self.val_transform
+                test_videos,
+                self.hparams.num_classes,
+                actions_dict,
+                gt_path,
+                features_path,
+                self.hparams.sample_rate,
+                self.hparams.window_size,
+                transform=self.val_transform,
             )
- 
 
     def train_dataloader(self) -> DataLoader[Any]:
         """Create and return the train dataloader.
@@ -198,10 +214,10 @@ class PTGDataModule(LightningDataModule):
         :return: The train dataloader.
         """
         train_sampler = torch.utils.data.WeightedRandomSampler(
-            self.data_train.weights, 
-            self.hparams.epoch_length, 
-            replacement=True, 
-            generator=None
+            self.data_train.weights,
+            self.hparams.epoch_length,
+            replacement=True,
+            generator=None,
         )
         return DataLoader(
             dataset=self.data_train,
@@ -216,7 +232,7 @@ class PTGDataModule(LightningDataModule):
 
         :return: The validation dataloader.
         """
-        
+
         return DataLoader(
             dataset=self.data_val,
             batch_size=self.hparams.batch_size,
