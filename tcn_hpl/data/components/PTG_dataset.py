@@ -115,25 +115,10 @@ class PTG_Dataset(torch.utils.data.Dataset):
         :return: features, targets, and mask of the window
         """
 
-        # print(f"size of dataset: {self.__len__()}")
-        # print(f"self.feature_frames: {self.feature_frames.shape}")
-        # print(f"self.target_frames: {self.target_frames.shape}")
-        # print(f"self.mask_frames: {self.mask_frames.shape}")
-        # print(f"self.source_vids: {self.source_vids.shape}")
-        # print(f"self.source_frames: {self.source_frames.shape}")
-        # print(f"self.mask_frames: {self.mask_frames}")
-
         features = self.feature_frames[idx : idx + self.window_size, :]
         target = self.target_frames[idx : idx + self.window_size]
         mask = self.mask_frames[idx : idx + self.window_size]
         source_vid = self.source_vids[idx : idx + self.window_size]
         source_frame = self.source_frames[idx : idx + self.window_size]
-
-        # print(f"mask: {mask}")
-        # print(f"features: {features.shape}")
-        # print(f"target: {target.shape}")
-        # print(f"mask: {mask.shape}")
-        # print(f"source_vid: {source_vid.shape}")
-        # print(f"source_frame: {source_frame.shape}")
 
         return features, target, mask, np.array(source_vid), source_frame

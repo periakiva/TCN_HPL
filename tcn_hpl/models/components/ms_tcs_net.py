@@ -35,6 +35,7 @@ class MultiStageModel(nn.Module):
             ]
         )
 
+        # normalizing network
         self.fc = nn.Sequential(
             nn.Linear(dim * window_size, 4096),
             nn.GELU(),
@@ -51,30 +52,14 @@ class MultiStageModel(nn.Module):
             nn.Dropout(0.25),
             nn.Linear(4096, dim * window_size),
         )
-        # self.fc1 = nn.Linear(dim*30, 4096)
-        # self.act = nn.GELU()
-        # self.drop1 = nn.Dropout(0.1)
-        # self.fc2 = nn.Linear(4096, 8192)
-        # self.drop2 = nn.Dropout(0.1)
-
-        # self.fc3 = nn.Linear(8192, 16384)
-        # self.act3 = nn.GELU()
-        # self.drop3 = nn.Dropout(0.1)
-        # self.fc4 = nn.Linear(16384, dim*30)
-
-        # self.fc = nn.Linear(1280, 2048)
 
     def forward(self, x, mask):
         b, d, c = x.shape  # [batch_size, feat_dim, window_size]
         # mask shape: [batch_size, window_size]
-        # print(f"x: {x.shape}")
-        # print(f"mask: {mask.shape}")
 
         re_x = einops.rearrange(x, "b d c -> b (d c)")
         re_x = self.fc(re_x)
         x = einops.rearrange(re_x, "b (d c) -> b d c", d=d, c=c)
-        # print(f"re_x: {re_x.shape}")
-        # print(f"x: {x.shape}")
 
         out = self.stage1(x, mask)
         outputs = out.unsqueeze(0)
@@ -82,7 +67,6 @@ class MultiStageModel(nn.Module):
             out = s(F.softmax(out, dim=1) * mask[:, None, :], mask)
             outputs = torch.cat((outputs, out.unsqueeze(0)), dim=0)
 
-        # print(f"outputs: {outputs.shape}")
         return outputs
 
 

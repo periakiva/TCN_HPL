@@ -399,14 +399,14 @@ def main(
                 dset.index.imgs[img_id]["activity_gt"] = activityi_gt_list[frame_index]
                 image_ids[frame_index] = img_id
 
+                # in case we want to visualize outputs
                 # import matplotlib.pyplot as plt
                 # image_show = dset.draw_image(gid=img_id)
                 # plt.imshow(image_show)
                 # plt.savefig(f'myfig_{task}_{img_id}.png')
                 # if index >= 20:
                 #     exit()
-                # print(f"activity gt: {activityi_gt_list[frame_index]}")
-                # print(dset.index.imgs[img_id])
+            
 
                 # exit()
 

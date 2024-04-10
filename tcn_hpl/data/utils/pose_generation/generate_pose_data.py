@@ -232,14 +232,6 @@ class PosesGenerator(object):
 
             img = read_image(path, format="BGR")
 
-            # bs, ls, kps = self.predict_single(img)
-
-            # print(f"boxes: {bs}")
-            # print(f"ls: {ls}")
-            # print(f"kps: {kps}")
-
-            # continue
-
             predictions, visualized_output = self.predictor.run_on_image(img)
 
             instances = predictions["instances"].to("cpu")
@@ -304,12 +296,12 @@ class PosesGenerator(object):
                             }
                             pose_keypoints_list.append(kp_dict)
 
-                        # print(f"pose_keypoints_list: {pose_keypoints_list}")
                         current_ann["keypoints"] = pose_keypoints_list
                         # current_ann['image_features'] = image_features
 
                     self.dataset.add_annotation(**current_ann)
 
+            # if we want to visualize output
             # import matplotlib.pyplot as plt
             # image_show = dset.draw_image(gid=img_id)
             # plt.imshow(image_show)

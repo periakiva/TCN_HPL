@@ -22,9 +22,7 @@ def main():
     videos = utils.dictionary_contents(
         videos_src_path, types=["*.mp4", "*.MP4"], recursive=True
     )
-    # print(videos)
-    # exit()
-    # videos = filter(lambda x: x.endswith('MP4'), videos)
+
     coco_json = {
         "info": {
             "description": "Medical Pose Estimation",
@@ -82,7 +80,6 @@ def main():
             frame_count = frame_count + 1
         print("Final frame:", num)
 
-    # coco_json_save_path = f"{videos_src_path}/medical_coco.json"
     coco_json_save_path = "medical_coco.json"
 
     with open(coco_json_save_path, "w") as outfile:

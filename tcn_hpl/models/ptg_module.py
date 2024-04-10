@@ -102,9 +102,7 @@ class PTGLitModule(LightningModule):
 
         self.class_ids = list(actions_dict.values())
         self.classes = list(actions_dict.keys())
-        # print(f"CLASSES IN MODEL: {self.classes}")
-        # print(f"actions_dict: {actions_dict}")
-        # exit()
+
         self.action_id_to_str = dict(zip(self.class_ids, self.classes))
 
         # loss functions
@@ -165,11 +163,6 @@ class PTGLitModule(LightningModule):
                 gt.append(int(video_gt_preds[ind][0]))
                 preds.append(int(video_gt_preds[ind][1]))
 
-            # plt.plot(gt, label="gt")
-            # plt.plot(preds, label="preds")
-
-            # sns.barplot(x=inds, y=gt, linestyle='dotted', color='magenta', label='GT', ax=ax)
-            # ax.stackplot(inds, gt, alpha=0.5, labels=['GT'], color=['magenta'])
             sns.lineplot(
                 x=inds,
                 y=preds,
@@ -185,12 +178,7 @@ class PTGLitModule(LightningModule):
             )
             sns.lineplot(x=inds, y=gt, color="magenta", label="GT", ax=ax, linewidth=3)
 
-            # ax.xaxis.label.set_visible(False)
-            # ax.spines['bottom'].set_visible(False)
             ax.legend()
-            # /confusion_mat_val.png"
-            # title = f"plot_pred_vs_gt_vid{video}.png" Path(folder).mkdir(parents=True, exist_ok=True)
-            # fig.savefig(f"{self.hparams.output_dir}/{title}")
             root_dir = f"{self.hparams.output_dir}/steps_vs_preds"
 
             if not os.path.exists(root_dir):
@@ -216,9 +204,6 @@ class PTGLitModule(LightningModule):
         self.val_loss.reset()
         self.val_acc.reset()
         self.val_acc_best.reset()
-        # self.train_loss.reset()
-        # self.train_acc.reset()
-        # self.train_acc_best.reset()
 
     def compute_loss(self, p, y, mask):
         """Compute the total loss for a batch
@@ -233,18 +218,7 @@ class PTGLitModule(LightningModule):
         probs = torch.softmax(p, dim=1)  # shape (batch size, self.hparams.num_classes)
         preds = torch.argmax(probs, dim=1).float()  # shape: batch size
 
-        # print(f"prediction: {p}, GT: {y}"), # [bs, num_classes, window_size]
-        # print(f"prediction: {p.shape}, GT: {y.shape}")
-
         loss = torch.zeros((1)).to(p[0])
-
-        # print(f"loss: {loss.shape}")
-        # print(f"p loss: {p[:,:,-1].shape}")
-        # print(f"y: {y.view(-1).shape}")
-
-        # p = einops.rearrange(p, 'b c w -> (b w) c')
-        # print(f"prediction: {p.shape}, GT: {y.shape}")
-        # print(f"prediction: {p}, GT: {y}"), # [bs, num_classes, window_size]
 
         # TODO: Use only last frame per window
 
@@ -259,25 +233,13 @@ class PTGLitModule(LightningModule):
         # )
 
         # need to penalize high volatility of predictions within a window
-
-        # std, mean = torch.std_mean(preds, dim=-1)
         mode, _ = torch.mode(y, dim=-1)
         mode = einops.repeat(mode, "b -> b c", c=preds.shape[-1])
-        # print(f"mode: {mode.shape}")
-        # print(f"preds: {preds.shape}")
-        # print(f"mode: {mode[0,:]}")
-        # eps = 1e10
-        # variation_coef = std/(mean+eps)
-        # variation_coef = torch.zeros_like(mode)
+
         variation_coef = torch.abs(preds - mode)
         variation_coef = torch.sum(variation_coef, dim=-1)
         gt_variation_coef = torch.zeros_like(variation_coef)
-        # print(f"variation_coef: {variation_coef[0]}")
-        # print(f"variation_coef mean: {variation_coef.mean()}")
-        # print(f"p: {p.shape}")
-        # print(f"p[:, :, 1:]: {p[0, 0, 1:]}")
-        # print(f"F.log_softmax(p[:, :, 1:], dim=1): {F.log_softmax(p[:, :, 1:], dim=1)}")
-
+        
         if self.hparams.use_smoothing_loss:
             loss += self.hparams.smoothing_loss * torch.mean(
                 self.mse(
@@ -347,9 +309,6 @@ class PTGLitModule(LightningModule):
         """
         loss, probs, preds, targets, source_vid, source_frame = self.model_step(batch)
 
-        # print(f"targets: {targets}")
-        # print(f"preds: {preds}")
-
         # update and log metrics
         self.train_loss(loss)
         self.train_acc(preds, targets[:, -1])
@@ -375,13 +334,7 @@ class PTGLitModule(LightningModule):
 
         # acc = self.train_acc.compute()  # get current val acc
         # self.train_acc_best(acc)  # update best so far val acc
-
-        # all_targets = torch.concat(self.training_step_outputs_target) # shape: #frames
-        # all_preds = torch.concat(self.training_step_outputs_pred) # shape: #frames
-        # all_probs = torch.concat(self.training_step_outputs_prob) # shape (#frames, #act labels)
-        # all_source_vids = torch.concat(self.training_step_outputs_source_vid)
-        # all_source_frames = torch.concat(self.training_step_outputs_source_frame)
-
+        
         all_targets = torch.cat(self.training_step_outputs_target)  # shape: #frames
         all_preds = torch.cat(self.training_step_outputs_pred)  # shape: #frames
         all_probs = torch.cat(
@@ -506,10 +459,6 @@ class PTGLitModule(LightningModule):
         windowed_preds = torch.tensor(windowed_preds).to(targets)
         windowed_ys = torch.tensor(windowed_ys).to(targets)
 
-        # print(f"preds: {preds.shape}, targets: {targets.shape}")
-        # print(f"windowed_preds: {windowed_preds.shape}, windowed_ys: {windowed_ys.shape}")
-
-        # self.val_acc(windowed_preds, windowed_ys)
         self.val_acc(preds, targets[:, -1])
         self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
@@ -520,26 +469,6 @@ class PTGLitModule(LightningModule):
         self.validation_step_outputs_pred.append(preds[inds])
         self.validation_step_outputs_prob.append(probs[inds])
 
-    # def plot_gt_vs_activations(self, step_gts, fname_suffix=None):
-    #     # Plot gt vs predicted class across all vid frames
-    #     fig = plt.figure()
-    #     sns.set(font_scale=1)
-    #     step_gts = [float(i) for i in step_gts]
-    #     plt.plot(step_gts, label="gt")
-    #     starting_zero_value = 0
-    #     for i in range(len(self.avg_probs)): #TODO - swap len(self.avg_probs) with the number of activities you're tracking
-    #         starting_zero_value -= 2
-    #         plot_line = np.asarray(self.activity_conf_history)[:, i]. #TODO: this 1D array is the activity confidences for one activity class i.
-    #         plt.plot(2 * plot_line + starting_zero_value, label=f"act_preds[{i}]")
-
-    #     plt.legend()
-    #     if not fname_suffix:
-    #         fname_suffix = f"vid{vid_id}"
-    #     recipe_type = foo # TODO: fill with the task name
-    #     title = f"plot_pred_vs_gt_{recipe_type}_{fname_suffix}.png"
-    #     plt.title(title)
-    #     fig.savefig(f"./outputs/{title}") # TODO: output this wherever you want
-    #     plt.close()
 
     def on_validation_epoch_end(self) -> None:
         "Lightning hook that is called when a validation epoch ends."
@@ -552,14 +481,6 @@ class PTGLitModule(LightningModule):
             best_val_acc = self.val_acc_best.compute()
             self.log("val/acc_best", best_val_acc, sync_dist=True, prog_bar=True)
 
-        # import collections
-        # counter = collections.Counter(self.validation_step_outputs_target)
-
-        # all_targets = torch.concat(self.validation_step_outputs_target) # shape: #frames
-        # all_preds = torch.concat(self.validation_step_outputs_pred) # shape: #frames
-        # all_probs = torch.concat(self.validation_step_outputs_prob) # shape (#frames, #act labels)
-        # all_source_vids = torch.concat(self.validation_step_outputs_source_vid)
-        # all_source_frames = torch.concat(self.validation_step_outputs_source_frame)
 
         all_targets = torch.cat(self.validation_step_outputs_target)  # shape: #frames
         all_preds = torch.cat(self.validation_step_outputs_pred)  # shape: #frames
@@ -569,8 +490,6 @@ class PTGLitModule(LightningModule):
         all_source_vids = torch.cat(self.validation_step_outputs_source_vid)
         all_source_frames = torch.cat(self.validation_step_outputs_source_frame)
 
-        # print(f"Per class occurences in GT: {torch.unique(all_targets, return_counts=True)}")
-        # print(f"all_targets: {all_targets.shape}")
 
         # Load val vidoes
         if self.val_frames is None:
@@ -613,7 +532,6 @@ class PTGLitModule(LightningModule):
             frame = self.val_frames[video_name][int(source_frame)]
 
             frame_idx = int(frame.split("/")[-1].split(".")[0].split("_")[-1])
-            # print(f"frame: {frame}, frame index: {frame_idx}")
             # frame_idx, time = time_from_name(frame)
 
             per_video_frame_gt_preds[video_name][frame_idx] = (int(gt), int(pred))
