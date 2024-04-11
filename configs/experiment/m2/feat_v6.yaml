@@ -71,9 +71,13 @@ data_gen:
                       58,60,63,64,125,126,127,129,131,134,135,136,128,130,137,
                       138,139]
 
-  train_vid_ids_bbn: [1, 2, 3, 4, 5, 6, 7, 8]
-  val_vid_ids_bbn: [9]
-  test_vid_ids_bbn: [10]
+  train_vid_ids_bbn: [3, 4, 5, 9, 10, 11, 12, 
+                    13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 
+                    31, 32, 33, 34,35,36, 37, 38, 39, 40,
+                    41, 42, 43, 44, 45, 46, 48, 49,
+                    51, 52, 53, 54]
+  val_vid_ids_bbn: [1, 6, 7, 29, 50]
+  test_vid_ids_bbn: [2, 8, 30, 47]
 
 paths:
   data_dir: "/data/PTG/TCN_data/m2/p_m2_feat_v6_with_pose_v3_aug_False_reshuffle_True" #[_v2_aug_False]

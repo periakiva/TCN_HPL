@@ -77,7 +77,7 @@ paths:
   data_dir: "/data/PTG/TCN_data/m3/p_m3_feat_v6_with_pose_v3_aug_False_reshuffle_True" #[_v2_aug_False]
   root_dir: "/data/PTG/medical/training/activity_classifier/TCN_HPL"
   dataset_kwcoco: "/data/users/peri.akiva/datasets/ptg/m3_all_all_obj_results_with_dets_and_pose.mscoco.json"
-  dataset_kwcoco_lab: 
+  dataset_kwcoco_lab: /data/PTG/medical/coco/m3_lab_all_all_obj_results_with_dets_and_pose.mscoco.json
   activity_config_root: "/home/local/KHQ/peri.akiva/projects/angel_system/config/activity_labels/medical"
   activity_config_fn: "${paths.activity_config_root}/${task}"
   ptg_root: "/home/local/KHQ/peri.akiva/angel_system"
