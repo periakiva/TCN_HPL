@@ -364,11 +364,21 @@ def main(
             elif data_type == "lab":
                 text = text.replace("\n", "\t")
                 text_list = text.split("\t")  # [:-1]
-                for index in range(0, len(text_list), 4):
-                    triplet = text_list[index : index + 4]
+                if text_list[-1] == "":
+                    text_list = text_list[:-1]
+                    
+                # this check handles inconsistencies in the GT we get from BBN
+                if task == "r18" or task=="m3":
+                    jump = 4
+                elif task=="m2" or task=="m5":
+                    jump = 3
+                    
+                for index in range(0, len(text_list), jump):
+                    triplet = text_list[index : index + jump]
                     start_frame = int(triplet[0])
                     end_frame = int(triplet[1])
-                    desc = triplet[3]
+                    desc = triplet[jump-1]
+                        
                     gt_label = activity_labels_desc_mapping[desc]
 
                     if end_frame - 1 > num_images:
