@@ -20,8 +20,8 @@ data:
   m3: /data/PTG/medical/training/yolo_object_detector/detect/m3_all/m3_all_all_obj_results.mscoco.json
   m5: /data/PTG/medical/training/yolo_object_detector/detect//m5_all/m5_all_all_obj_results.mscoco.json
   r18: /data/PTG/medical/training/yolo_object_detector/detect//r18_all/r18_all_all_obj_results.mscoco.json
-  save_root: /data/users/peri.akiva/datasets/ptg
+  save_root: /data/PTG/medical/coco
 bbn_lab:
   r18: /data/PTG/medical/training/yolo_object_detector/detect//r18_all_bbn_lab_data/r18_all_bbn_lab_data_all_obj_results.mscoco.json
   m5: /data/PTG/medical/training/yolo_object_detector/detect/m5_lab_all/m5_lab_all_all_obj_results.mscoco.json
-  save_root: /data/users/peri.akiva/datasets/ptg
+  save_root: /data/PTG/medical/coco

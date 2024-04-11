@@ -67,9 +67,10 @@ data_gen:
   val_vid_ids: [3, 7, 10, 18, 27, 32, 41]
   test_vid_ids: [50, 13, 47, 25]
 
-  train_vid_ids_bbn: [1, 2, 3, 4, 5, 6, 7, 8]
-  val_vid_ids_bbn: [9]
-  test_vid_ids_bbn: [10]
+  train_vid_ids_bbn: [3, 4, 6, 7, 9, 11, 12, 13,
+                      14, 15, 16, 17, 18, 20, 21, 19, 22, 23]
+  val_vid_ids_bbn: [1, 5, 10]
+  test_vid_ids_bbn: [2, 8]
 
 paths:
   # data_dir: "/data/PTG/TCN_data/m5/p_m5_feat_v6_with_pose_v3_aug_False_reshuffle_True" #[_v2_aug_False]
