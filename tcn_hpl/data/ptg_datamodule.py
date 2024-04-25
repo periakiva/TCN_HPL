@@ -132,7 +132,7 @@ class PTGDataModule(LightningDataModule):
             exp_data = self.hparams.data_dir
 
             vid_list_file = (
-                f"{exp_data}/splits/train_activity.split{self.hparams.split}.bundle"
+                f"{exp_data}/splits/train.split{self.hparams.split}.bundle"
             )
             vid_list_file_val = (
                 f"{exp_data}/splits/val.split{self.hparams.split}.bundle"
