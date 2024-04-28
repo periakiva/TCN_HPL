@@ -15,6 +15,10 @@ from angel_system.activity_classification.train_activity_classifier import (
     data_loader,
     compute_feats,
 )
+from angel_system.activity_classification.utils import (
+    feature_version_to_options,
+    plot_feature_vec
+)
 
 from angel_system.data.medical.data_paths import TASK_TO_NAME 
 from angel_system.data.medical.data_paths import LAB_TASK_TO_NAME
@@ -83,14 +87,16 @@ def create_training_data(config_path):
     exp_name = f"{task_name}_{task_data_type}_data_feat_v{feat_version}"
     data_dir = f"/data/PTG/{topic}/training/activity_classifier"
     output_data_dir = f"{data_dir}/TCN_data/{task_name}/{exp_name}"
+    print(output_data_dir)
 
     gt_dir = f"{output_data_dir}/groundTruth"
     frames_dir = f"{output_data_dir}/frames"
     bundle_dir = f"{output_data_dir}/splits"
     features_dir = f"{output_data_dir}/features"
+    features_visualization_dir = f"{output_data_dir}/features_visualization"
 
     # Create directories
-    for folder in [output_data_dir, gt_dir, frames_dir, bundle_dir, features_dir]:
+    for folder in [output_data_dir, gt_dir, frames_dir, bundle_dir, features_dir, features_visualization_dir]:
         Path(folder).mkdir(parents=True, exist_ok=True)
 
     # Clear out the bundles
@@ -131,13 +137,30 @@ def create_training_data(config_path):
             if "_extracted" in video_name:
                 video_name = video_name.split("_extracted")[0]
 
-            image_ids = split_dset.index.vidid_to_gids[video_id]
+            image_ids = sorted(split_dset.index.vidid_to_gids[video_id])
             num_images = len(image_ids)
 
             print(f"there are {num_images} images in video {video_id}")
 
             video_dset = split_dset.subset(gids=image_ids, copy=True)
 
+            # groundtruth
+            with open(f"{gt_dir}/{video_name}.txt", "w") as gt_f, \
+                open(f"{frames_dir}/{video_name}.txt", "w") as frames_f:
+                for image_id in image_ids:
+                    image = split_dset.imgs[image_id]
+                    image_n = image["file_name"] # this is the shortened string
+
+                    frame_idx, time = time_from_name(image_n)
+                    
+                    activity_gt = image["activity_gt"]
+                    if activity_gt is None:
+                        activity_gt = "background"
+
+                    gt_f.write(f"{activity_gt}\n")
+                    frames_f.write(f"{image_n}\n")
+
+            
             # features
             (
                 act_map,
@@ -157,28 +180,48 @@ def create_training_data(config_path):
                 ann_by_image,
                 feat_version=feat_version
             )
+            print(X.shape)
+
+            # Draw the feature vector for the first video
+            if video_id == list(split_dset.index.videos.keys())[0]:
+                opts = feature_version_to_options(feat_version)
+                gid_to_aids = dset.index.gid_to_aids
+                for image_id, feature_vec in zip(image_ids, X):
+                    image = split_dset.imgs[image_id]
+                    image_fn = image["file_name"]
+                    print("fn", image_fn)
+
+                    aids = gid_to_aids[image_id]
+                    anns = ub.dict_subset(dset.anns, aids)
+
+                    default_center = [0, 0]
+                    right_hand_center = default_center
+                    left_hand_center = default_center
+                    for aid, ann in anns.items():
+                        cat_id = ann["category_id"]
+                        cat = dset.cats[cat_id]["name"]
+
+                        if cat == "hand (right)":
+                            right_hand_center = kwimage.Boxes([ann["bbox"]], "xywh").center
+                            right_hand_center = [right_hand_center[0][0][0], right_hand_center[1][0][0]]
+                        if cat == "hand (left)":
+                            left_hand_center = kwimage.Boxes([ann["bbox"]], "xywh").center
+                            left_hand_center = [left_hand_center[0][0][0], left_hand_center[1][0][0]]
+
+                    plot_feature_vec(
+                        image_fn,
+                        right_hand_center, left_hand_center, feature_vec,
+                        obj_label_to_ind,
+                        **opts,
+                        output_dir=os.path.join(features_visualization_dir, video_name)
+                    )
 
             X = X.T
             print(f"X after transpose: {X.shape}")
 
             np.save(f"{features_dir}/{video_name}.npy", X)
 
-            # groundtruth
-            with open(f"{gt_dir}/{video_name}.txt", "w") as gt_f, \
-                open(f"{frames_dir}/{video_name}.txt", "w") as frames_f:
-                for image_id in image_ids:
-                    image = split_dset.imgs[image_id]
-                    image_n = image["file_name"] # this is the shortened string
-
-                    frame_idx, time = time_from_name(image_n)
-                    
-                    activity_gt = image["activity_gt"]
-                    if activity_gt is None:
-                        activity_gt = "background"
-
-                    gt_f.write(f"{activity_gt}\n")
-                    frames_f.write(f"{image_n}\n")
-
+            
             # bundles
             with open(f"{bundle_dir}/{split}.split1.bundle", "a+") as bundle:
                 bundle.write(f"{video_name}.txt\n")
