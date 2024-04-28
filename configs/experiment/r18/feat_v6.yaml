@@ -29,7 +29,7 @@ model:
   compile: false
 
   net:
-    dim: 165 # length of feature vector
+    dim: 297 # length of feature vector
 
 
 # GENERATE TRAINING DATA
@@ -55,8 +55,7 @@ data_gen:
   filter_black_gloves: false
   filter_blue_gloves: false
 
-  activity_config_root: "/home/local/KHQ/hannah.defazio/angel_system/config/activity_labels"
-  activity_config_fn: "${data_gen.activity_config_root}/${task}/${task}.yaml"
+  activity_config_fn: "/home/local/KHQ/hannah.defazio/angel_system/config/activity_labels/medical/r18.yaml"
 
 
 # TRAINING
