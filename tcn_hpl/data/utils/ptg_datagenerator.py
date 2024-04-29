@@ -46,6 +46,7 @@ def create_training_data(config_path):
     filter_blue_gloves = config["data_gen"].get("filter_blue_gloves", False)
     blue_glove_vids = config["data_gen"].get("blue_glove_vids", [])
     activity_config_fn = config["data_gen"]["activity_config_fn"]
+    top_k_objects = config["data_gen"]["top_k_objects"]
 
     dset = kwcoco.CocoDataset(config["data_gen"]["dataset_kwcoco"])
     # Check if the dest has activity gt, if it doesn't then add it
@@ -84,7 +85,7 @@ def create_training_data(config_path):
     #####################
     # Output
     #####################
-    exp_name = f"{task_name}_{task_data_type}_data_feat_v{feat_version}"
+    exp_name = f"{task_name}_{task_data_type}_data_top_{top_k_objects}_objs_feat_v{feat_version}"
     data_dir = f"/data/PTG/{topic}/training/activity_classifier"
     output_data_dir = f"{data_dir}/TCN_data/{task_name}/{exp_name}"
     print(output_data_dir)
@@ -178,7 +179,8 @@ def create_training_data(config_path):
                 obj_label_to_ind,
                 obj_ind_to_label,
                 ann_by_image,
-                feat_version=feat_version
+                feat_version=feat_version,
+                top_k_objects=top_k_objects
             )
             print(X.shape)
 
@@ -213,7 +215,8 @@ def create_training_data(config_path):
                         right_hand_center, left_hand_center, feature_vec,
                         obj_label_to_ind,
                         **opts,
-                        output_dir=os.path.join(features_visualization_dir, video_name)
+                        output_dir=os.path.join(features_visualization_dir, video_name),
+                        top_k_objects=top_k_objects
                     )
 
             X = X.T

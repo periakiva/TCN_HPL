@@ -29,11 +29,14 @@ model:
   compile: false
 
   net:
-    dim: 297 # length of feature vector
+    #dim: 297 # length of feature vector when top_k_objects=1
+    dim: 501 # length of feature vector when top_k_objects=2
 
 
 # GENERATE TRAINING DATA
 data_gen:
+  top_k_objects: 2
+  
   data_type: "pro"
   dataset_kwcoco: "/data/PTG/medical/training/yolo_object_detector/detect/r18_all/r18_all_all_obj_results_with_dets_and_pose.mscoco.json"
   train_vid_ids: [1, 2, 4, 5, 6, 8, 9, 11, 12, 14, 15, 16, 17, 19, 20, 21,
