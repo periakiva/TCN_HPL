@@ -22,7 +22,7 @@ seed: 12345
 
 trainer:
   min_epochs: 50
-  max_epochs: 1000
+  max_epochs: 500
 
 
 model:
@@ -60,11 +60,14 @@ data_gen:
 
   activity_config_fn: "/home/local/KHQ/hannah.defazio/angel_system/config/activity_labels/medical/r18.yaml"
 
-exp_name: "${task}_${data_gen.data_type}_data_top_${data_gen.top_k_objects}_objs_feat_v${feature_version}"
+  # This matches the folder name created in the data generator
+  exp_name: "${task}_${data_gen.data_type}_data_top_${data_gen.top_k_objects}_objs_feat_v${feature_version}"
 
 # TRAINING
+exp_name: ${data_gen.exp_name}_win_25
+
 paths:
-  data_dir: "/data/PTG/medical/training/activity_classifier/TCN_data/${task}/${exp_name}"
+  data_dir: "/data/PTG/medical/training/activity_classifier/TCN_data/${task}/${data_gen.exp_name}"
   root_dir: "/data/PTG/medical/training/activity_classifier/TCN_HPL/"
 
 data:
@@ -72,7 +75,7 @@ data:
   batch_size: 512
   num_workers: 0
   epoch_length: 20000
-  window_size: 45
+  window_size: 25
   sample_rate: 1
 
   # AUGMENTATIONS
