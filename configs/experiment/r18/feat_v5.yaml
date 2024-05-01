@@ -4,7 +4,7 @@
 # python train.py experiment=example
 topic: "medical"
 task: "r18"
-feature_version: 6
+feature_version: 5
 
 defaults:
   - override /data: ptg
@@ -22,15 +22,15 @@ seed: 12345
 
 trainer:
   min_epochs: 50
-  max_epochs: 1000
+  max_epochs: 500
 
 
 model:
   compile: false
 
   net:
-    dim: 297 # length of feature vector when top_k_objects=1
-    #dim: 501 # length of feature vector when top_k_objects=2
+    dim: 33 # length of feature vector when top_k_objects=1
+    #dim: xx # length of feature vector when top_k_objects=2
 
 
 # GENERATE TRAINING DATA
@@ -87,6 +87,7 @@ data:
     NormalizePixelPts:
       feat_version: ${feature_version}
       num_obj_classes: 6 # not including background
+
 
 logger:
   aim:
