@@ -64,7 +64,7 @@ data_gen:
   exp_name: "${task}_${data_gen.data_type}_data_top_${data_gen.top_k_objects}_objs_feat_v${feature_version}"
 
 # TRAINING
-exp_name: ${data_gen.exp_name}_win_25
+exp_name: ${data_gen.exp_name}_win_25_norm
 
 paths:
   data_dir: "/data/PTG/medical/training/activity_classifier/TCN_data/${task}/${data_gen.exp_name}"
@@ -80,16 +80,17 @@ data:
 
   # AUGMENTATIONS
   all_transforms:
-    train_order: [] #["MoveCenterPts", "NormalizePixelPts"]
-    test_order: [] #["NormalizePixelPts"]
+    train_order: ["NormalizePixelPts"] #["MoveCenterPts", "NormalizePixelPts"]
+    test_order: ["NormalizePixelPts"]
     MoveCenterPts:
         feat_version: ${feature_version}
-        num_obj_classes: 6 # not including background
+        num_obj_classes: 6 # not including background, includes hands
     NormalizeFromCenter:
       feat_version: ${feature_version}
     NormalizePixelPts:
       feat_version: ${feature_version}
-      num_obj_classes: 6 # not including background
+      num_obj_classes: 6 # not including background, includes hands
+      top_k_objects: ${data_gen.top_k_objects}
 
 logger:
   aim:

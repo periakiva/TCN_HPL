@@ -4,6 +4,8 @@ import torch
 import numpy as np
 
 
+from angel_system.activity_classification.utils import feature_version_to_options
+
 class MoveCenterPts(torch.nn.Module):
     """Simulate moving the center points of the bounding boxes by
     adjusting the distances for each frame
@@ -224,7 +226,7 @@ class ActivationDelta(torch.nn.Module):
 class NormalizePixelPts(torch.nn.Module):
     """Normalize the distances from -1 to 1 with respect to the image size"""
 
-    def __init__(self, im_w, im_h, num_obj_classes, feat_version):
+    def __init__(self, im_w, im_h, num_obj_classes, feat_version, top_k_objects):
         """
         :param w: Width of the frames
         :param h: Height of the frames
@@ -236,49 +238,117 @@ class NormalizePixelPts(torch.nn.Module):
 
         self.im_w = im_w
         self.im_h = im_h
+
         self.num_obj_classes = num_obj_classes
+        self.num_non_obj_classes = 2 # hands
+        self.num_good_obj_classes = self.num_obj_classes - self.num_non_obj_classes
+
+        self.top_k_objects = top_k_objects
 
         self.feat_version = feat_version
+        self.opts = feature_version_to_options(self.feat_version)
+        print(self.opts)
 
+        self.use_activation = self.opts.get("use_activation", False)
+        print("use_activation", self.use_activation)
+        self.use_hand_dist = self.opts.get("use_hand_dist", False)
+        self.use_intersection = self.opts.get("use_intersection", False)
+        self.use_center_dist = self.opts.get("use_center_dist", False)
+        self.use_joint_hand_offset = self.opts.get("use_joint_hand_offset", False)
+        self.use_joint_object_offset = self.opts.get("use_joint_object_offset", False)
+    
     def forward(self, features):
-        if self.feat_version == 1:
-            # No distances to normalize
-            pass
+        for i in range(features.shape[0]):
+            frame = features[i]
+        
+            # HANDS
+            if self.use_activation:
+                ind = 0 # right hand confidence
+                ind +=1 # left hand confidence
+            # Right - left hand
+            if self.use_hand_dist:
+                # Right - left hand distance
+                ind += 1 # Right - left hand distance x
+                rh_lh_dist_x = frame[ind]
+                frame[ind] = rh_lh_dist_x / self.im_w
 
-        elif self.feat_version == 2 or self.feat_version == 5:
-            num_obj_feats = self.num_obj_classes - 2  # not including hands in count
-            num_obj_points = num_obj_feats * 2
+                ind += 1 # Right - left hand distance y
+                rh_lh_dist_y = frame[ind]
+                frame[ind] = rh_lh_dist_y / self.im_h
+            if self.use_intersection:
+                ind += 1 # left / right hand intersection
+            if self.use_center_dist:
+                ind += 2 # right hand - image center x/y
+                ind +=2 # left hand - image center x/y
+            if self.use_joint_hand_offset:
+                # right hand - joints distances
+                for i in range(22):
+                    ind += 1
+                    rh_jointi_dist_x = frame[ind]
+                    frame[ind] = rh_jointi_dist_x / self.im_w
 
-            # Distance from hand to object
-            right_dist_idx2 = num_obj_points + 1
-            left_dist_idx1 = num_obj_points + 2
-            left_dist_idx2 = left_dist_idx1 + num_obj_points
+                    ind += 1
+                    rh_jointi_dist_y = frame[ind]
+                    frame[ind] = rh_jointi_dist_y / self.im_h
+            
+                # left hand - joints distances
+                for i in range(22):
+                    ind += 1
+                    lh_jointi_dist_x = frame[ind]
+                    frame[ind] = lh_jointi_dist_x / self.im_w
 
-            for start_idx, end_idx in zip(
-                [1, left_dist_idx1], [right_dist_idx2, left_dist_idx2]
-            ):
-                features[:, start_idx:end_idx:2] = (
-                    features[:, start_idx:end_idx:2] / self.im_w
-                )
-                features[:, start_idx + 1 : end_idx : 2] = (
-                    features[:, start_idx + 1 : end_idx : 2] / self.im_h
-                )
+                    ind += 1
+                    lh_jointi_dist_y = frame[ind]
+                    frame[ind] = lh_jointi_dist_y / self.im_h
 
-            # Distance between hands
-            hands_dist_idx = left_dist_idx2
+            # TOP K OBJECTS
+            for object_k_index in range(self.top_k_objects):
+                if self.use_hand_dist:
+                    # Right hand distances
+                    for obj_ind in range(self.num_good_obj_classes):
+                        ind += 1
+                        obj_rh_dist_x = frame[ind]
+                        frame[ind] = obj_rh_dist_x / self.im_w
 
-            features[:, hands_dist_idx] = features[:, hands_dist_idx] / self.im_w
-            features[:, hands_dist_idx + 1] = (
-                features[:, hands_dist_idx + 1] / self.im_h
-            )
+                        ind += 1
+                        obj_rh_dist_y = frame[ind]
+                        frame[ind] = obj_rh_dist_y / self.im_h
 
-        elif self.feat_version == 3:
-            # Distances are from the center, skip
-            pass
+                    # Left hand distances
+                    for obj_ind in range(self.num_good_obj_classes):
+                        ind += 1
+                        obj_lh_dist_x = frame[ind]
+                        frame[ind] = obj_lh_dist_x / self.im_w
 
-        else:
-            NotImplementedError(f"Unhandled version '{self.feat_version}'")
+                        ind += 1
+                        obj_lh_dist_y = frame[ind]
+                        frame[ind] = obj_lh_dist_y / self.im_h
 
+                for obj_ind in range(self.num_good_obj_classes):
+                    if self.use_activation:
+                        ind += 1 # Object confidence
+
+                    if self.use_intersection:
+                        ind += 1 # obj - right hand intersection
+                        ind += 1 # obj - left hand intersection
+
+                    if self.use_center_dist:
+                        ind += 2 # image center - obj distances x/y
+
+
+                if self.use_joint_object_offset:
+                    # obj - joints distances
+                    for obj_ind in range(self.num_good_obj_classes):
+                        joints_dists = []
+                        for i in range(22):
+                            ind += 1
+                            obj_jointi_dist_x = frame[ind]
+                            frame[ind] = obj_jointi_dist_x / self.im_w
+
+                            ind += 1
+                            obj_jointi_dist_y = frame[ind]
+                            frame[ind] = obj_jointi_dist_y / self.im_h
+            features[i] = frame
         return features
 
     def __repr__(self) -> str:
