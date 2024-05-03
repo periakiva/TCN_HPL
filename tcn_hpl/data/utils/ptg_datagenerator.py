@@ -214,9 +214,10 @@ def create_training_data(config_path):
                         image_fn,
                         right_hand_center, left_hand_center, feature_vec,
                         obj_label_to_ind,
-                        **opts,
                         output_dir=os.path.join(features_visualization_dir, video_name),
                         top_k_objects=top_k_objects
+                        **opts,
+                        
                     )
 
             X = X.T
