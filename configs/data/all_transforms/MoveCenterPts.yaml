@@ -2,7 +2,7 @@ MoveCenterPts:
   _target_: tcn_hpl.data.components.augmentations.MoveCenterPts
   hand_dist_delta: 0.05
   obj_dist_delta: 0.05
-  joint_dist_delta: 0.05
+  joint_dist_delta: 0.025
   im_w: 1280
   im_h: 720
   num_obj_classes: 42

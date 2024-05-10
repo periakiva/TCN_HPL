@@ -119,23 +119,23 @@ class MoveCenterPts(torch.nn.Module):
                         ind += 1
                         obj_rh_dist_x = frame[ind]
                         new_val = obj_rh_dist_x + rhand_delta_x + obj_delta_x if obj_rh_dist_x != 0 else obj_rh_dist_x
-                        frame[ind] = clamp(new_val, 0, self.im_w)
+                        frame[ind] = clamp(new_val, -self.im_, self.im_w)
 
                         ind += 1
                         obj_rh_dist_y = frame[ind]
                         new_val = obj_rh_dist_y + rhand_delta_y + obj_delta_y if obj_rh_dist_y != 0 else obj_rh_dist_y
-                        frame[ind] = clamp(new_val, 0, self.im_h)
+                        frame[ind] = clamp(new_val, -self.im_h, self.im_h)
 
                 if self.use_center_dist:
                     ind += 1
                     rh_im_center_dist_x = frame[ind]
                     new_val = rh_im_center_dist_x + rhand_delta_x if rh_im_center_dist_x != 0 else rh_im_center_dist_x
-                    frame[ind] = frame[ind] = clamp(new_val, 0, self.im_w)
+                    frame[ind] = frame[ind] = clamp(new_val, -self.im_w, self.im_w)
 
                     ind +=1 
                     rh_im_center_dist_y = frame[ind]
                     new_val = rh_im_center_dist_y + rhand_delta_y if rh_im_center_dist_y != 0 else rh_im_center_dist_y
-                    frame[ind] = clamp(new_val, 0, self.im_h)
+                    frame[ind] = clamp(new_val, -self.im_h, self.im_h)
 
                 # LEFT HAND
                 if self.use_activation:
@@ -147,23 +147,23 @@ class MoveCenterPts(torch.nn.Module):
                         ind += 1
                         obj_lh_dist_x = frame[ind]
                         new_val = obj_lh_dist_x  + lhand_delta_x + obj_delta_x if obj_lh_dist_x != 0 else obj_lh_dist_x
-                        frame[ind] = clamp(new_val, 0, self.im_w)
+                        frame[ind] = clamp(new_val, -self.im_w, self.im_w)
 
                         ind += 1
                         obj_lh_dist_y = frame[ind]
                         new_val = obj_lh_dist_y + lhand_delta_y + obj_delta_y if obj_lh_dist_y != 0 else obj_lh_dist_y
-                        frame[ind] = clamp(new_val, 0, self.im_h)
+                        frame[ind] = clamp(new_val, -self.im_h, self.im_h)
                 
                 if self.use_center_dist:
                     ind += 1
                     lh_im_center_dist_x = frame[ind]
                     new_val = lh_im_center_dist_x + lhand_delta_x if lh_im_center_dist_x != 0 else lh_im_center_dist_x
-                    frame[ind] = clamp(new_val, 0, self.im_w)
+                    frame[ind] = clamp(new_val, -self.im_w, self.im_w)
 
                     ind += 1
                     lh_im_center_dist_y = frame[ind]
                     new_val = lh_im_center_dist_y + lhand_delta_y if lh_im_center_dist_y != 0 else lh_im_center_dist_y
-                    frame[ind] = clamp(new_val, 0, self.im_h)
+                    frame[ind] = clamp(new_val, -self.im_h, self.im_h)
 
                 # Right - left hand
                 if self.use_hand_dist:
@@ -171,12 +171,12 @@ class MoveCenterPts(torch.nn.Module):
                     ind += 1
                     rh_lh_dist_x = frame[ind]
                     new_val = rh_lh_dist_x + rhand_delta_x + lhand_delta_x if rh_lh_dist_x != 0 else rh_lh_dist_x
-                    frame[ind] = clamp(new_val, 0, self.im_w)
+                    frame[ind] = clamp(new_val, -self.im_w, self.im_w)
 
                     ind += 1
                     rh_lh_dist_y = frame[ind]
                     new_val = rh_lh_dist_y + rhand_delta_y + lhand_delta_y if rh_lh_dist_y != 0 else rh_lh_dist_y
-                    frame[ind] = clamp(new_val, 0, self.im_h)
+                    frame[ind] = clamp(new_val, -self.im_h, self.im_h)
 
                 if self.use_intersection:
                     ind += 1 # lh - rh intersection
@@ -194,40 +194,38 @@ class MoveCenterPts(torch.nn.Module):
                         ind += 1
                         obj_im_center_dist_x = frame[ind]
                         new_val = obj_im_center_dist_x + obj_delta_x if obj_im_center_dist_x != 0 else obj_im_center_dist_x
-                        frame[ind] = clamp(new_val, 0, self.im_w)
+                        frame[ind] = clamp(new_val, -self.im_w, self.im_w)
 
                         ind += 1
                         obj_im_center_dist_y = frame[ind]
                         new_val = obj_im_center_dist_y + obj_delta_y if obj_im_center_dist_y != 0 else obj_im_center_dist_y
-                        frame[ind] = clamp(new_val, 0, self.im_h)
+                        frame[ind] = clamp(new_val, -self.im_h, self.im_h)
 
             # HANDS-JOINTS
+            # Don't clamp the joint values because they can be off the frame originally
             if self.use_joint_hand_offset:
                 # left hand - joints distances
                 for i in range(22):
                     ind += 1
                     lh_jointi_dist_x = frame[ind]
-                    new_val = lh_jointi_dist_x + lhand_delta_x + joint_delta_x if lh_jointi_dist_x != 0 else lh_jointi_dist_x
-                    frame[ind] = clamp(new_val, 0, self.im_w)
+                    frame[ind] = lh_jointi_dist_x + lhand_delta_x + joint_delta_x if lh_jointi_dist_x != 0 else lh_jointi_dist_x
 
                     ind += 1
                     lh_jointi_dist_y = frame[ind]
-                    new_val = lh_jointi_dist_y + lhand_delta_y + joint_delta_y if lh_jointi_dist_y != 0 else lh_jointi_dist_y
-                    frame[ind] = clamp(new_val, 0, self.im_h)
+                    frame[ind] = lh_jointi_dist_y + lhand_delta_y + joint_delta_y if lh_jointi_dist_y != 0 else lh_jointi_dist_y
 
                 # right hand - joints distances
                 for i in range(22):
                     ind += 1
                     rh_jointi_dist_x = frame[ind]
-                    new_val = rh_jointi_dist_x + rhand_delta_x + joint_delta_x if rh_jointi_dist_x != 0 else rh_jointi_dist_x
-                    frame[ind] = clamp(new_val, 0, self.im_w)
+                    frame[ind] = rh_jointi_dist_x + rhand_delta_x + joint_delta_x if rh_jointi_dist_x != 0 else rh_jointi_dist_x
 
                     ind += 1
                     rh_jointi_dist_y = frame[ind]
-                    new_val = rh_jointi_dist_y + rhand_delta_y + joint_delta_y if rh_jointi_dist_y != 0 else rh_jointi_dist_y
-                    frame[ind] = clamp(new_val, 0, self.im_h)
+                    frame[ind] = rh_jointi_dist_y + rhand_delta_y + joint_delta_y if rh_jointi_dist_y != 0 else rh_jointi_dist_y
 
             # OBJS-JOINTS
+            # Don't clamp the joint values because they can be off the frame originally
             if self.use_joint_object_offset:
                 for object_k_index in range(self.top_k_objects):
                     # obj - joints distances
@@ -236,14 +234,13 @@ class MoveCenterPts(torch.nn.Module):
                         for i in range(22):
                             ind += 1
                             obj_jointi_dist_x = frame[ind]
-                            new_val = obj_jointi_dist_x + obj_delta_x + joint_delta_x if obj_jointi_dist_x != 0 else obj_jointi_dist_x
-                            frame[ind] = clamp(new_val, 0, self.im_w)
+                            frame[ind] = obj_jointi_dist_x + obj_delta_x + joint_delta_x if obj_jointi_dist_x != 0 else obj_jointi_dist_x
 
                             ind += 1
                             obj_jointi_dist_y = frame[ind]
-                            new_val = obj_jointi_dist_y + obj_delta_y + joint_delta_y if obj_jointi_dist_y != 0 else obj_jointi_dist_y
-                            frame[ind] = clamp(new_val, 0, self.im_h)
+                            frame[ind] = obj_jointi_dist_y + obj_delta_y + joint_delta_y if obj_jointi_dist_y != 0 else obj_jointi_dist_y
 
+            import pdb; pdb.set_trace()
             features[i] = frame
         return features
 
