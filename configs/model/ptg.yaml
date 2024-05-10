@@ -32,6 +32,7 @@ criterion:
   # weight: [1, 1, 1, 1, 1, 1]
   reduction: "mean"
 
+topic: ${topic}
 data_dir: ${paths.data_dir}
 
 # Smoothing loss weight

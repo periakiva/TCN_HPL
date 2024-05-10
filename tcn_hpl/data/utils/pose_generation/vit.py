@@ -72,7 +72,7 @@ class Attention(nn.Module):
             head_dim = attn_head_dim
         all_head_dim = head_dim * self.num_heads
 
-        self.scale = qk_scale or head_dim**-0.5
+        self.scale = qk_scale or head_dim ** -0.5
 
         self.qkv = nn.Linear(dim, all_head_dim * 3, bias=qkv_bias)
 
@@ -158,7 +158,7 @@ class PatchEmbed(nn.Module):
         num_patches = (
             (img_size[1] // patch_size[1])
             * (img_size[0] // patch_size[0])
-            * (ratio**2)
+            * (ratio ** 2)
         )
         self.patch_shape = (
             int(img_size[0] // patch_size[0] * ratio),
