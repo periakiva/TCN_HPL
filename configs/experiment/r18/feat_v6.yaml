@@ -29,8 +29,8 @@ model:
   compile: false
 
   net:
-    dim: 297 # length of feature vector when top_k_objects=1
-    #dim: 501 # length of feature vector when top_k_objects=2
+    #dim: 297 # length of feature vector when top_k_objects=1
+    dim: 506 # length of feature vector when top_k_objects=2
 
 
 # GENERATE TRAINING DATA
@@ -61,7 +61,7 @@ data_gen:
   activity_config_fn: "/home/local/KHQ/hannah.defazio/angel_system/config/activity_labels/medical/r18.yaml"
 
   # This matches the folder name created in the data generator
-  exp_name: "${task}_${data_gen.data_type}_data_top_${data_gen.top_k_objects}_objs_feat_v${feature_version}"
+  exp_name: "${task}_${data_gen.data_type}_data_top_${data_gen.top_k_objects}_objs_feat_v${feature_version}_NEW_ORDER"
 
 # TRAINING
 exp_name: ${data_gen.exp_name}_win_25_norm
@@ -80,7 +80,7 @@ data:
 
   # AUGMENTATIONS
   all_transforms:
-    train_order: ["NormalizePixelPts"] #["MoveCenterPts", "NormalizePixelPts"]
+    train_order: ["MoveCenterPts", "NormalizePixelPts"]
     test_order: ["NormalizePixelPts"]
     MoveCenterPts:
         feat_version: ${feature_version}
