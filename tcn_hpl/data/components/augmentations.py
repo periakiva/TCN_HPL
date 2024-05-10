@@ -109,25 +109,26 @@ class MoveCenterPts(torch.nn.Module):
                 # RIGHT HAND
                 if self.use_activation:
                     ind += 1 # right hand conf
+                    right_hand_conf = frame[ind]
 
                 if self.use_hand_dist:
                     for obj_ind in range(self.num_good_obj_classes):
                         ind += 1
                         obj_rh_dist_x = frame[ind]
-                        frame[ind] = obj_rh_dist_x + rhand_delta_x + obj_delta_x
+                        frame[ind] = obj_rh_dist_x + rhand_delta_x + obj_delta_x if obj_rh_dist_x != 0 else obj_rh_dist_x
 
                         ind += 1
                         obj_rh_dist_y = frame[ind]
-                        frame[ind] = obj_rh_dist_y + rhand_delta_y + obj_delta_y
+                        frame[ind] = obj_rh_dist_y + rhand_delta_y + obj_delta_y if obj_rh_dist_y != 0 else obj_rh_dist_y
 
                 if self.use_center_dist:
                     ind += 1
                     rh_im_center_dist_x = frame[ind]
-                    frame[ind] = rh_im_center_dist_x + rhand_delta_x
+                    frame[ind] = rh_im_center_dist_x + rhand_delta_x if rh_im_center_dist_x != 0 else rh_im_center_dist_x
 
                     ind +=1 
                     rh_im_center_dist_y = frame[ind]
-                    frame[ind] = rh_im_center_dist_y + rhand_delta_y
+                    frame[ind] = rh_im_center_dist_y + rhand_delta_y if rh_im_center_dist_y != 0 else rh_im_center_dist_y
 
                 # LEFT HAND
                 if self.use_activation:
@@ -138,32 +139,32 @@ class MoveCenterPts(torch.nn.Module):
                     for obj_ind in range(self.num_good_obj_classes):
                         ind += 1
                         obj_lh_dist_x = frame[ind]
-                        frame[ind] = obj_lh_dist_x  + lhand_delta_x + obj_delta_x
+                        frame[ind] = obj_lh_dist_x  + lhand_delta_x + obj_delta_x if obj_lh_dist_x != 0 else obj_lh_dist_x
                         
                         ind += 1
                         obj_lh_dist_y = frame[ind]
-                        frame[ind] = obj_lh_dist_y + lhand_delta_y + obj_delta_y
+                        frame[ind] = obj_lh_dist_y + lhand_delta_y + obj_delta_y if obj_lh_dist_y != 0 else obj_lh_dist_y
 
                 
                 if self.use_center_dist:
                     ind += 1
                     lh_im_center_dist_x = frame[ind]
-                    frame[ind] = lh_im_center_dist_x + lhand_delta_x
+                    frame[ind] = lh_im_center_dist_x + lhand_delta_x if lh_im_center_dist_x != 0 else lh_im_center_dist_x
 
                     ind += 1
                     lh_im_center_dist_y = frame[ind]
-                    frame[ind] = lh_im_center_dist_y + lhand_delta_y
+                    frame[ind] = lh_im_center_dist_y + lhand_delta_y if lh_im_center_dist_y != 0 else lh_im_center_dist_y
 
                 # Right - left hand
                 if self.use_hand_dist:
                     # Right - left hand distance
                     ind += 1
                     rh_lh_dist_x = frame[ind]
-                    frame[ind] = rh_lh_dist_x + rhand_delta_x + lhand_delta_x
+                    frame[ind] = rh_lh_dist_x + rhand_delta_x + lhand_delta_x if rh_lh_dist_x != 0 else rh_lh_dist_x
 
                     ind += 1
                     rh_lh_dist_y = frame[ind]
-                    frame[ind] = rh_lh_dist_y + rhand_delta_y + lhand_delta_y
+                    frame[ind] = rh_lh_dist_y + rhand_delta_y + lhand_delta_y if rh_lh_dist_y != 0 else rh_lh_dist_y
 
                 if self.use_intersection:
                     ind += 1 # lh - rh intersection
@@ -180,11 +181,11 @@ class MoveCenterPts(torch.nn.Module):
                         # image center - obj distances
                         ind += 1
                         obj_im_center_dist_x = frame[ind]
-                        frame[ind] = obj_im_center_dist_x + obj_delta_x
+                        frame[ind] = obj_im_center_dist_x + obj_delta_x if obj_im_center_dist_x != 0 else obj_im_center_dist_x
 
                         ind += 1
                         obj_im_center_dist_y = frame[ind]
-                        frame[ind] = obj_im_center_dist_y + obj_delta_y 
+                        frame[ind] = obj_im_center_dist_y + obj_delta_y if obj_im_center_dist_y != 0 else obj_im_center_dist_y
 
             # HANDS-JOINTS
             if self.use_joint_hand_offset:
@@ -192,21 +193,21 @@ class MoveCenterPts(torch.nn.Module):
                 for i in range(22):
                     ind += 1
                     lh_jointi_dist_x = frame[ind]
-                    frame[ind] = lh_jointi_dist_x + lhand_delta_x + joint_delta_x
+                    frame[ind] = lh_jointi_dist_x + lhand_delta_x + joint_delta_x if lh_jointi_dist_x != 0 else lh_jointi_dist_x
 
                     ind += 1
                     lh_jointi_dist_y = frame[ind]
-                    frame[ind] = lh_jointi_dist_y + lhand_delta_y + joint_delta_y
+                    frame[ind] = lh_jointi_dist_y + lhand_delta_y + joint_delta_y if lh_jointi_dist_y != 0 else lh_jointi_dist_y
 
                 # right hand - joints distances
                 for i in range(22):
                     ind += 1
                     rh_jointi_dist_x = frame[ind]
-                    frame[ind] = rh_jointi_dist_x + rhand_delta_x + joint_delta_x
+                    frame[ind] = rh_jointi_dist_x + rhand_delta_x + joint_delta_x if rh_jointi_dist_x != 0 else rh_jointi_dist_x
 
                     ind += 1
                     rh_jointi_dist_y = frame[ind]
-                    frame[ind] = rh_jointi_dist_y + rhand_delta_y + joint_delta_y
+                    frame[ind] = rh_jointi_dist_y + rhand_delta_y + joint_delta_y if rh_jointi_dist_y != 0 else rh_jointi_dist_y
 
 
             # OBJS-JOINTS
@@ -218,18 +219,17 @@ class MoveCenterPts(torch.nn.Module):
                         for i in range(22):
                             ind += 1
                             obj_jointi_dist_x = frame[ind]
-                            frame[ind] = obj_jointi_dist_x + obj_delta_x + joint_delta_x
+                            frame[ind] = obj_jointi_dist_x + obj_delta_x + joint_delta_x if obj_jointi_dist_x != 0 else obj_jointi_dist_x
 
                             ind += 1
                             obj_jointi_dist_y = frame[ind]
-                            frame[ind] = obj_jointi_dist_y + obj_delta_y + joint_delta_y
+                            frame[ind] = obj_jointi_dist_y + obj_delta_y + joint_delta_y if obj_jointi_dist_y != 0 else obj_jointi_dist_y
 
-            import pdb; pdb.set_trace()
             features[i] = frame
         return features
 
     def __repr__(self) -> str:
-        detail = f"(hand_dist_delta={self.hand_dist_delta}, obj_dist_delta={self.obj_dist_delta}, im_w={self.im_w}, im_h={self.im_h}, num_obj_classes={self.num_obj_classes}, feat_version={self.feat_version})"
+        detail = f"(hand_dist_delta={self.hand_dist_delta}, obj_dist_delta={self.obj_dist_delta}, joint_dist_delta={self.joint_dist_delta}, im_w={self.im_w}, im_h={self.im_h}, num_obj_classes={self.num_obj_classes}, feat_version={self.feat_version}, top_k_object={self.top_k_objects})"
         return f"{self.__class__.__name__}{detail}"
 
 
@@ -355,7 +355,7 @@ class ActivationDelta(torch.nn.Module):
         return features
 
     def __repr__(self) -> str:
-        detail = f"(conf_delta={self.conf_delta}, num_obj_classes={self.num_obj_classes}, feat_version={self.feat_version})"
+        detail = f"(conf_delta={self.conf_delta}, num_obj_classes={self.num_obj_classes}, feat_version={self.feat_version}, top_k_objects={self.top_k_objects})"
         return f"{self.__class__.__name__}{detail}"
 
 
@@ -591,7 +591,7 @@ class NormalizeFromCenter(torch.nn.Module):
                 if self.use_hand_dist:
                     # Right - left hand distance
                     ind += 2
-                if use_intersection:
+                if self.use_intersection:
                     ind += 1 # right - left hand intersection
 
                 # OBJECTS
@@ -638,6 +638,6 @@ class NormalizeFromCenter(torch.nn.Module):
 
     def __repr__(self) -> str:
         detail = (
-            f"(im_w={self.im_w}, im_h={self.im_h}, feat_version={self.feat_version})"
+            f"(im_w={self.im_w}, im_h={self.im_h}, feat_version={self.feat_version}, top_k_objects={self.top_k_objects})"
         )
         return f"{self.__class__.__name__}{detail}"
