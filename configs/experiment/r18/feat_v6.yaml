@@ -29,8 +29,8 @@ model:
   compile: false
 
   net:
-    #dim: 297 # length of feature vector when top_k_objects=1
-    dim: 506 # length of feature vector when top_k_objects=2
+    dim: 297 # length of feature vector when top_k_objects=1
+    #dim: 506 # length of feature vector when top_k_objects=2
 
 
 # GENERATE TRAINING DATA
