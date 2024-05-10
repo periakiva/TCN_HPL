@@ -12,7 +12,7 @@ def clamp(n, smallest, largest):
 
 class MoveCenterPts(torch.nn.Module):
     """Simulate moving the center points of the bounding boxes by
-    adjusting the distances for each frame_features
+    adjusting the distances for each frame
     """
 
     def __init__(
@@ -33,8 +33,8 @@ class MoveCenterPts(torch.nn.Module):
             pixels for the objects
         :param joint_dist_delta: Decimal percentage to calculate the +-offset in
             pixels for the joints
-        :param w: Width of the frame_featuress
-        :param h: Height of the frame_featuress
+        :param w: Width of the frames
+        :param h: Height of the frames
         :param num_obj_classes: Number of object classes from the detections
             used to generate the features
         :param feat_version: Algorithm version used to generate the input features
@@ -202,7 +202,7 @@ class MoveCenterPts(torch.nn.Module):
                         frame_features[ind] = clamp(new_val, -self.im_h, self.im_h)
 
             # HANDS-JOINTS
-            # Don't clamp the joint values because they can be off the frame_features originally
+            # Don't clamp the joint values because they can be off the frame originally
             if self.use_joint_hand_offset:
                 # left hand - joints distances
                 for i in range(22):
@@ -225,7 +225,7 @@ class MoveCenterPts(torch.nn.Module):
                     frame_features[ind] = rh_jointi_dist_y + rhand_delta_y + joint_delta_y if rh_jointi_dist_y != 0 else rh_jointi_dist_y
 
             # OBJS-JOINTS
-            # Don't clamp the joint values because they can be off the frame_features originally
+            # Don't clamp the joint values because they can be off the frame originally
             if self.use_joint_object_offset:
                 for object_k_index in range(self.top_k_objects):
                     # obj - joints distances
@@ -379,8 +379,8 @@ class NormalizePixelPts(torch.nn.Module):
 
     def __init__(self, im_w, im_h, num_obj_classes, feat_version, top_k_objects):
         """
-        :param w: Width of the frame_featuress
-        :param h: Height of the frame_featuress
+        :param w: Width of the frames
+        :param h: Height of the frames
         :param num_obj_classes: Number of object classes from the detections
             used to generate the features
         :param feat_version: Algorithm version used to generate the input features
@@ -530,8 +530,8 @@ class NormalizeFromCenter(torch.nn.Module):
 
     def __init__(self, im_w, im_h, num_obj_classes, feat_version, top_k_objects):
         """
-        :param w: Width of the frame_featuress
-        :param h: Height of the frame_featuress
+        :param w: Width of the frames
+        :param h: Height of the frames
         :param feat_version: Algorithm version used to generate the input features
         :param top_k_objects: Number top confidence objects to use per label
         """
