@@ -85,7 +85,7 @@ def create_training_data(config_path):
     #####################
     # Output
     #####################
-    exp_name = f"{task_name}_{task_data_type}_data_top_{top_k_objects}_objs_feat_v{feat_version}"
+    exp_name = f"{task_name}_{task_data_type}_data_top_{top_k_objects}_objs_feat_v{feat_version}_NEW_ORDER"
     data_dir = f"/data/PTG/{topic}/training/activity_classifier"
     output_data_dir = f"{data_dir}/TCN_data/{task_name}/{exp_name}"
     print(output_data_dir)
@@ -215,7 +215,7 @@ def create_training_data(config_path):
                         right_hand_center, left_hand_center, feature_vec,
                         obj_label_to_ind,
                         output_dir=os.path.join(features_visualization_dir, video_name),
-                        top_k_objects=top_k_objects
+                        top_k_objects=top_k_objects,
                         **opts,
                         
                     )
