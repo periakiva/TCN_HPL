@@ -7,8 +7,9 @@ import numpy as np
 from angel_system.activity_classification.utils import feature_version_to_options
 
 
-def clamp(n, smallest, largest): 
+def clamp(n, smallest, largest):
     return max(smallest, min(n, largest))
+
 
 class MoveCenterPts(torch.nn.Module):
     """Simulate moving the center points of the bounding boxes by
@@ -24,7 +25,7 @@ class MoveCenterPts(torch.nn.Module):
         im_h,
         num_obj_classes,
         feat_version,
-        top_k_objects
+        top_k_objects,
     ):
         """
         :param hand_dist_delta: Decimal percentage to calculate the +-offset in
@@ -48,9 +49,9 @@ class MoveCenterPts(torch.nn.Module):
 
         self.im_w = im_w
         self.im_h = im_h
-        
+
         self.num_obj_classes = num_obj_classes
-        self.num_non_obj_classes = 2 # hands
+        self.num_non_obj_classes = 2  # hands
         self.num_good_obj_classes = self.num_obj_classes - self.num_non_obj_classes
 
         self.top_k_objects = top_k_objects
@@ -75,7 +76,6 @@ class MoveCenterPts(torch.nn.Module):
         self.joint_delta_x = self.im_w * self.joint_dist_delta
         self.joint_delta_y = self.im_h * self.joint_dist_delta
 
-
     def init_deltas(self):
         rhand_delta_x = random.uniform(-self.hand_delta_x, self.hand_delta_x)
         rhand_delta_y = random.uniform(-self.hand_delta_y, self.hand_delta_y)
@@ -93,7 +93,7 @@ class MoveCenterPts(torch.nn.Module):
             [rhand_delta_x, rhand_delta_y],
             [lhand_delta_x, lhand_delta_y],
             [obj_delta_x, obj_delta_y],
-            [joint_delta_x, joint_delta_y]
+            [joint_delta_x, joint_delta_y],
         )
 
     def forward(self, features):
@@ -104,65 +104,99 @@ class MoveCenterPts(torch.nn.Module):
                 [rhand_delta_x, rhand_delta_y],
                 [lhand_delta_x, lhand_delta_y],
                 [obj_delta_x, obj_delta_y],
-                [joint_delta_x, joint_delta_y]
+                [joint_delta_x, joint_delta_y],
             ) = self.init_deltas()
 
             ind = -1
             for object_k_index in range(self.top_k_objects):
                 # RIGHT HAND
                 if self.use_activation:
-                    ind += 1 # right hand conf
+                    ind += 1  # right hand conf
                     right_hand_conf = frame_features[ind]
 
                 if self.use_hand_dist:
                     for obj_ind in range(self.num_good_obj_classes):
                         ind += 1
                         obj_rh_dist_x = frame_features[ind]
-                        new_val = obj_rh_dist_x + rhand_delta_x + obj_delta_x if obj_rh_dist_x != 0 else obj_rh_dist_x
+                        new_val = (
+                            obj_rh_dist_x + rhand_delta_x + obj_delta_x
+                            if obj_rh_dist_x != 0
+                            else obj_rh_dist_x
+                        )
                         frame_features[ind] = clamp(new_val, -self.im_w, self.im_w)
 
                         ind += 1
                         obj_rh_dist_y = frame_features[ind]
-                        new_val = obj_rh_dist_y + rhand_delta_y + obj_delta_y if obj_rh_dist_y != 0 else obj_rh_dist_y
+                        new_val = (
+                            obj_rh_dist_y + rhand_delta_y + obj_delta_y
+                            if obj_rh_dist_y != 0
+                            else obj_rh_dist_y
+                        )
                         frame_features[ind] = clamp(new_val, -self.im_h, self.im_h)
 
                 if self.use_center_dist:
                     ind += 1
                     rh_im_center_dist_x = frame_features[ind]
-                    new_val = rh_im_center_dist_x + rhand_delta_x if rh_im_center_dist_x != 0 else rh_im_center_dist_x
-                    frame_features[ind] = frame_features[ind] = clamp(new_val, -self.im_w, self.im_w)
+                    new_val = (
+                        rh_im_center_dist_x + rhand_delta_x
+                        if rh_im_center_dist_x != 0
+                        else rh_im_center_dist_x
+                    )
+                    frame_features[ind] = frame_features[ind] = clamp(
+                        new_val, -self.im_w, self.im_w
+                    )
 
-                    ind +=1 
+                    ind += 1
                     rh_im_center_dist_y = frame_features[ind]
-                    new_val = rh_im_center_dist_y + rhand_delta_y if rh_im_center_dist_y != 0 else rh_im_center_dist_y
+                    new_val = (
+                        rh_im_center_dist_y + rhand_delta_y
+                        if rh_im_center_dist_y != 0
+                        else rh_im_center_dist_y
+                    )
                     frame_features[ind] = clamp(new_val, -self.im_h, self.im_h)
 
                 # LEFT HAND
                 if self.use_activation:
-                    ind +=1 # left hand conf
+                    ind += 1  # left hand conf
 
                 if self.use_hand_dist:
                     # Left hand distances
                     for obj_ind in range(self.num_good_obj_classes):
                         ind += 1
                         obj_lh_dist_x = frame_features[ind]
-                        new_val = obj_lh_dist_x  + lhand_delta_x + obj_delta_x if obj_lh_dist_x != 0 else obj_lh_dist_x
+                        new_val = (
+                            obj_lh_dist_x + lhand_delta_x + obj_delta_x
+                            if obj_lh_dist_x != 0
+                            else obj_lh_dist_x
+                        )
                         frame_features[ind] = clamp(new_val, -self.im_w, self.im_w)
 
                         ind += 1
                         obj_lh_dist_y = frame_features[ind]
-                        new_val = obj_lh_dist_y + lhand_delta_y + obj_delta_y if obj_lh_dist_y != 0 else obj_lh_dist_y
+                        new_val = (
+                            obj_lh_dist_y + lhand_delta_y + obj_delta_y
+                            if obj_lh_dist_y != 0
+                            else obj_lh_dist_y
+                        )
                         frame_features[ind] = clamp(new_val, -self.im_h, self.im_h)
-                
+
                 if self.use_center_dist:
                     ind += 1
                     lh_im_center_dist_x = frame_features[ind]
-                    new_val = lh_im_center_dist_x + lhand_delta_x if lh_im_center_dist_x != 0 else lh_im_center_dist_x
+                    new_val = (
+                        lh_im_center_dist_x + lhand_delta_x
+                        if lh_im_center_dist_x != 0
+                        else lh_im_center_dist_x
+                    )
                     frame_features[ind] = clamp(new_val, -self.im_w, self.im_w)
 
                     ind += 1
                     lh_im_center_dist_y = frame_features[ind]
-                    new_val = lh_im_center_dist_y + lhand_delta_y if lh_im_center_dist_y != 0 else lh_im_center_dist_y
+                    new_val = (
+                        lh_im_center_dist_y + lhand_delta_y
+                        if lh_im_center_dist_y != 0
+                        else lh_im_center_dist_y
+                    )
                     frame_features[ind] = clamp(new_val, -self.im_h, self.im_h)
 
                 # Right - left hand
@@ -170,35 +204,51 @@ class MoveCenterPts(torch.nn.Module):
                     # Right - left hand distance
                     ind += 1
                     rh_lh_dist_x = frame_features[ind]
-                    new_val = rh_lh_dist_x + rhand_delta_x + lhand_delta_x if rh_lh_dist_x != 0 else rh_lh_dist_x
+                    new_val = (
+                        rh_lh_dist_x + rhand_delta_x + lhand_delta_x
+                        if rh_lh_dist_x != 0
+                        else rh_lh_dist_x
+                    )
                     frame_features[ind] = clamp(new_val, -self.im_w, self.im_w)
 
                     ind += 1
                     rh_lh_dist_y = frame_features[ind]
-                    new_val = rh_lh_dist_y + rhand_delta_y + lhand_delta_y if rh_lh_dist_y != 0 else rh_lh_dist_y
+                    new_val = (
+                        rh_lh_dist_y + rhand_delta_y + lhand_delta_y
+                        if rh_lh_dist_y != 0
+                        else rh_lh_dist_y
+                    )
                     frame_features[ind] = clamp(new_val, -self.im_h, self.im_h)
 
                 if self.use_intersection:
-                    ind += 1 # lh - rh intersection
+                    ind += 1  # lh - rh intersection
 
                 # OBJECTS
                 for obj_ind in range(self.num_good_obj_classes):
                     if self.use_activation:
-                        ind += 1 # Object confidence
+                        ind += 1  # Object confidence
 
                     if self.use_intersection:
-                        ind += 2 # obj - hands intersection
+                        ind += 2  # obj - hands intersection
 
                     if self.use_center_dist:
                         # image center - obj distances
                         ind += 1
                         obj_im_center_dist_x = frame_features[ind]
-                        new_val = obj_im_center_dist_x + obj_delta_x if obj_im_center_dist_x != 0 else obj_im_center_dist_x
+                        new_val = (
+                            obj_im_center_dist_x + obj_delta_x
+                            if obj_im_center_dist_x != 0
+                            else obj_im_center_dist_x
+                        )
                         frame_features[ind] = clamp(new_val, -self.im_w, self.im_w)
 
                         ind += 1
                         obj_im_center_dist_y = frame_features[ind]
-                        new_val = obj_im_center_dist_y + obj_delta_y if obj_im_center_dist_y != 0 else obj_im_center_dist_y
+                        new_val = (
+                            obj_im_center_dist_y + obj_delta_y
+                            if obj_im_center_dist_y != 0
+                            else obj_im_center_dist_y
+                        )
                         frame_features[ind] = clamp(new_val, -self.im_h, self.im_h)
 
             # HANDS-JOINTS
@@ -208,21 +258,37 @@ class MoveCenterPts(torch.nn.Module):
                 for i in range(22):
                     ind += 1
                     lh_jointi_dist_x = frame_features[ind]
-                    frame_features[ind] = lh_jointi_dist_x + lhand_delta_x + joint_delta_x if lh_jointi_dist_x != 0 else lh_jointi_dist_x
+                    frame_features[ind] = (
+                        lh_jointi_dist_x + lhand_delta_x + joint_delta_x
+                        if lh_jointi_dist_x != 0
+                        else lh_jointi_dist_x
+                    )
 
                     ind += 1
                     lh_jointi_dist_y = frame_features[ind]
-                    frame_features[ind] = lh_jointi_dist_y + lhand_delta_y + joint_delta_y if lh_jointi_dist_y != 0 else lh_jointi_dist_y
+                    frame_features[ind] = (
+                        lh_jointi_dist_y + lhand_delta_y + joint_delta_y
+                        if lh_jointi_dist_y != 0
+                        else lh_jointi_dist_y
+                    )
 
                 # right hand - joints distances
                 for i in range(22):
                     ind += 1
                     rh_jointi_dist_x = frame_features[ind]
-                    frame_features[ind] = rh_jointi_dist_x + rhand_delta_x + joint_delta_x if rh_jointi_dist_x != 0 else rh_jointi_dist_x
+                    frame_features[ind] = (
+                        rh_jointi_dist_x + rhand_delta_x + joint_delta_x
+                        if rh_jointi_dist_x != 0
+                        else rh_jointi_dist_x
+                    )
 
                     ind += 1
                     rh_jointi_dist_y = frame_features[ind]
-                    frame_features[ind] = rh_jointi_dist_y + rhand_delta_y + joint_delta_y if rh_jointi_dist_y != 0 else rh_jointi_dist_y
+                    frame_features[ind] = (
+                        rh_jointi_dist_y + rhand_delta_y + joint_delta_y
+                        if rh_jointi_dist_y != 0
+                        else rh_jointi_dist_y
+                    )
 
             # OBJS-JOINTS
             # Don't clamp the joint values because they can be off the frame originally
@@ -234,11 +300,19 @@ class MoveCenterPts(torch.nn.Module):
                         for i in range(22):
                             ind += 1
                             obj_jointi_dist_x = frame_features[ind]
-                            frame_features[ind] = obj_jointi_dist_x + obj_delta_x + joint_delta_x if obj_jointi_dist_x != 0 else obj_jointi_dist_x
+                            frame_features[ind] = (
+                                obj_jointi_dist_x + obj_delta_x + joint_delta_x
+                                if obj_jointi_dist_x != 0
+                                else obj_jointi_dist_x
+                            )
 
                             ind += 1
                             obj_jointi_dist_y = frame_features[ind]
-                            frame_features[ind] = obj_jointi_dist_y + obj_delta_y + joint_delta_y if obj_jointi_dist_y != 0 else obj_jointi_dist_y
+                            frame_features[ind] = (
+                                obj_jointi_dist_y + obj_delta_y + joint_delta_y
+                                if obj_jointi_dist_y != 0
+                                else obj_jointi_dist_y
+                            )
 
             features[i] = frame_features
         return features
@@ -264,7 +338,7 @@ class ActivationDelta(torch.nn.Module):
         self.conf_delta = conf_delta
 
         self.num_obj_classes = num_obj_classes
-        self.num_non_obj_classes = 2 # hands
+        self.num_non_obj_classes = 2  # hands
         self.num_good_obj_classes = self.num_obj_classes - self.num_non_obj_classes
 
         self.top_k_objects = top_k_objects
@@ -298,18 +372,20 @@ class ActivationDelta(torch.nn.Module):
                     right_hand_conf = frame_features[ind]
 
                     if right_hand_conf != 0:
-                        frame_features[ind] = frame_features[ind] = clamp(right_hand_conf + delta, 0, 1)
+                        frame_features[ind] = frame_features[ind] = clamp(
+                            right_hand_conf + delta, 0, 1
+                        )
 
                 if self.use_hand_dist:
                     for obj_ind in range(self.num_good_obj_classes):
-                        ind += 2 # rh - obj distance
+                        ind += 2  # rh - obj distance
 
                 if self.use_center_dist:
-                    ind += 2 # rh - center dist
+                    ind += 2  # rh - center dist
 
                 # LEFT HAND
                 if self.use_activation:
-                    ind +=1
+                    ind += 1
                     left_hand_conf = frame_features[ind]
 
                     if left_hand_conf != 0:
@@ -318,17 +394,16 @@ class ActivationDelta(torch.nn.Module):
                 if self.use_hand_dist:
                     # Left hand distances
                     for obj_ind in range(self.num_good_obj_classes):
-                        ind += 2 # lh - obj dist
-
+                        ind += 2  # lh - obj dist
 
                 if self.use_center_dist:
-                    ind += 2 # lh - center dist
+                    ind += 2  # lh - center dist
 
                 # Right - left hand
                 if self.use_hand_dist:
-                    ind += 2 # Right - left hand distance
+                    ind += 2  # Right - left hand distance
                 if self.use_intersection:
-                    ind += 1 # rh - lh intersection
+                    ind += 1  # rh - lh intersection
 
                 # OBJECTS
                 for obj_ind in range(self.num_good_obj_classes):
@@ -345,7 +420,7 @@ class ActivationDelta(torch.nn.Module):
                         ind += 2
 
                     if self.use_center_dist:
-                        ind += 2 # image center - obj distances
+                        ind += 2  # image center - obj distances
 
             # HANDS-JOINTS
             if self.use_joint_hand_offset:
@@ -392,7 +467,7 @@ class NormalizePixelPts(torch.nn.Module):
         self.im_h = im_h
 
         self.num_obj_classes = num_obj_classes
-        self.num_non_obj_classes = 2 # hands
+        self.num_non_obj_classes = 2  # hands
         self.num_good_obj_classes = self.num_obj_classes - self.num_non_obj_classes
 
         self.top_k_objects = top_k_objects
@@ -406,7 +481,7 @@ class NormalizePixelPts(torch.nn.Module):
         self.use_center_dist = self.opts.get("use_center_dist", False)
         self.use_joint_hand_offset = self.opts.get("use_joint_hand_offset", False)
         self.use_joint_object_offset = self.opts.get("use_joint_object_offset", False)
-    
+
     def forward(self, features):
         for i in range(features.shape[0]):
             frame_features = features[i]
@@ -415,14 +490,14 @@ class NormalizePixelPts(torch.nn.Module):
             for object_k_index in range(self.top_k_objects):
                 # RIGHT HAND
                 if self.use_activation:
-                    ind += 1 # right hand confidence
+                    ind += 1  # right hand confidence
 
                 if self.use_hand_dist:
                     for obj_ind in range(self.num_good_obj_classes):
                         ind += 1
                         obj_rh_dist_x = frame_features[ind]
                         frame_features[ind] = obj_rh_dist_x / self.im_w
-                        
+
                         ind += 1
                         obj_rh_dist_y = frame_features[ind]
                         frame_features[ind] = obj_rh_dist_y / self.im_h
@@ -433,7 +508,7 @@ class NormalizePixelPts(torch.nn.Module):
 
                 # LEFT HAND
                 if self.use_activation:
-                    ind +=1 # left hand confidence
+                    ind += 1  # left hand confidence
 
                 if self.use_hand_dist:
                     # Left hand distances
@@ -445,11 +520,11 @@ class NormalizePixelPts(torch.nn.Module):
                         ind += 1
                         obj_lh_dist_y = frame_features[ind]
                         frame_features[ind] = obj_lh_dist_y / self.im_h
-                
+
                 if self.use_center_dist:
                     # left hand - image center distance
                     ind += 2
-                    
+
                 # Right - left hand
                 if self.use_hand_dist:
                     # Right - left hand distance
@@ -461,12 +536,12 @@ class NormalizePixelPts(torch.nn.Module):
                     rh_lh_dist_y = frame_features[ind]
                     frame_features[ind] = rh_lh_dist_y / self.im_h
                 if self.use_intersection:
-                    ind += 1 # right - left hadn intersection
+                    ind += 1  # right - left hadn intersection
 
                 # OBJECTS
                 for obj_ind in range(self.num_good_obj_classes):
                     if self.use_activation:
-                        ind += 1 # Object confidence
+                        ind += 1  # Object confidence
                         obj_conf = frame_features[ind]
 
                     if self.use_intersection:
@@ -543,7 +618,7 @@ class NormalizeFromCenter(torch.nn.Module):
         self.half_h = im_h / 2
 
         self.num_obj_classes = num_obj_classes
-        self.num_non_obj_classes = 2 # hands
+        self.num_non_obj_classes = 2  # hands
         self.num_good_obj_classes = self.num_obj_classes - self.num_non_obj_classes
 
         self.top_k_objects = top_k_objects
@@ -557,7 +632,6 @@ class NormalizeFromCenter(torch.nn.Module):
         self.use_center_dist = self.opts.get("use_center_dist", False)
         self.use_joint_hand_offset = self.opts.get("use_joint_hand_offset", False)
         self.use_joint_object_offset = self.opts.get("use_joint_object_offset", False)
-    
 
     def forward(self, features):
         for i in range(features.shape[0]):
@@ -567,7 +641,7 @@ class NormalizeFromCenter(torch.nn.Module):
             for object_k_index in range(self.top_k_objects):
                 # RIGHT HAND
                 if self.use_activation:
-                    ind += 1 # right hand conf
+                    ind += 1  # right hand conf
 
                 if self.use_hand_dist:
                     for obj_ind in range(self.num_good_obj_classes):
@@ -578,21 +652,21 @@ class NormalizeFromCenter(torch.nn.Module):
                     ind += 1
                     rh_im_center_dist_x = frame_features[ind]
                     frame_features[ind] = rh_im_center_dist_x / self.half_w
-                    
-                    ind +=1 
+
+                    ind += 1
                     rh_im_center_dist_y = frame_features[ind]
                     frame_features[ind] = rh_im_center_dist_y / self.half_h
 
                 # LEFT HAND
                 if self.use_activation:
-                    ind +=1 # left hand conf
+                    ind += 1  # left hand conf
 
                 if self.use_hand_dist:
                     # Left hand distances
                     for obj_ind in range(self.num_good_obj_classes):
                         # left hand - obj dist
                         ind += 2
-                
+
                 if self.use_center_dist:
                     ind += 1
                     lh_im_center_dist_x = frame_features[ind]
@@ -607,12 +681,12 @@ class NormalizeFromCenter(torch.nn.Module):
                     # Right - left hand distance
                     ind += 2
                 if self.use_intersection:
-                    ind += 1 # right - left hand intersection
+                    ind += 1  # right - left hand intersection
 
                 # OBJECTS
                 for obj_ind in range(self.num_good_obj_classes):
                     if self.use_activation:
-                        ind += 1 # Object confidence
+                        ind += 1  # Object confidence
 
                     if self.use_intersection:
                         # obj - hand intersection
@@ -623,7 +697,7 @@ class NormalizeFromCenter(torch.nn.Module):
                         ind += 1
                         obj_im_center_dist_x = frame_features[ind]
                         frame_features[ind] = obj_im_center_dist_x / self.half_w
-                        
+
                         ind += 1
                         obj_im_center_dist_y = frame_features[ind]
                         frame_features[ind] = obj_im_center_dist_y / self.half_h
@@ -633,7 +707,7 @@ class NormalizeFromCenter(torch.nn.Module):
                 # left hand - joints distances
                 for i in range(22):
                     ind += 2
-                    
+
                 # right hand - joints distances
                 for i in range(22):
                     ind += 2
@@ -650,9 +724,6 @@ class NormalizeFromCenter(torch.nn.Module):
             features[i] = frame_features
         return features
 
-
     def __repr__(self) -> str:
-        detail = (
-            f"(im_w={self.im_w}, im_h={self.im_h}, feat_version={self.feat_version}, top_k_objects={self.top_k_objects})"
-        )
+        detail = f"(im_w={self.im_w}, im_h={self.im_h}, feat_version={self.feat_version}, top_k_objects={self.top_k_objects})"
         return f"{self.__class__.__name__}{detail}"

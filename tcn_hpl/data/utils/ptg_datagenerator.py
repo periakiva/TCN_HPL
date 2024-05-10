@@ -17,10 +17,10 @@ from angel_system.activity_classification.train_activity_classifier import (
 )
 from angel_system.activity_classification.utils import (
     feature_version_to_options,
-    plot_feature_vec
+    plot_feature_vec,
 )
 
-from angel_system.data.medical.data_paths import TASK_TO_NAME 
+from angel_system.data.medical.data_paths import TASK_TO_NAME
 from angel_system.data.medical.data_paths import LAB_TASK_TO_NAME
 
 
@@ -36,11 +36,11 @@ def create_training_data(config_path):
     topic = config["topic"]
     if topic == "medical":
         from angel_system.data.medical.load_bbn_data import time_from_name
-    elif topic == "cooking": 
+    elif topic == "cooking":
         from angel_system.data.cooking.load_kitware_data import time_from_name
 
     task_name = config["task"]
-    task_data_type = config["data_gen"]["data_type"] # pro or lab
+    task_data_type = config["data_gen"]["data_type"]  # pro or lab
     filter_black_gloves = config["data_gen"].get("filter_black_gloves", False)
     black_glove_vids = config["data_gen"].get("black_glove_vids", [])
     filter_blue_gloves = config["data_gen"].get("filter_blue_gloves", False)
@@ -53,6 +53,7 @@ def create_training_data(config_path):
     if not "activity_gt" in list(dset.imgs.values())[0].keys():
         print("adding activity ground truth to the dataset")
         from angel_system.data.common.kwcoco_utils import add_activity_gt_to_kwcoco
+
         dset = add_activity_gt_to_kwcoco(topic, task_name, dset, activity_config_fn)
 
     def filter_dset_by_split(split):
@@ -62,26 +63,26 @@ def create_training_data(config_path):
         split_img_ids = []
         for index in config["data_gen"][split]:
             video_name = f"{task_name.upper()}-{index}"
-            
+
             # Make sure we have the video
             if video_name in video_lookup:
                 vid = video_lookup[video_name]["id"]
             else:
                 warnings.warn(f"Video {video_name} is not present in the dataset")
                 exit(1)
-            
+
             # Optionally filter gloves
             if filter_black_gloves and index in black_glove_vids:
                 continue
             if filter_blue_gloves and index in blue_glove_vids:
                 continue
-            
+
             split_vidids.append(video_name)
             split_img_ids.extend(list(dset.index.vidid_to_gids[vid]))
 
         split_dset = dset.subset(gids=split_img_ids, copy=True)
         return split_dset
-    
+
     #####################
     # Output
     #####################
@@ -97,7 +98,14 @@ def create_training_data(config_path):
     features_visualization_dir = f"{output_data_dir}/features_visualization"
 
     # Create directories
-    for folder in [output_data_dir, gt_dir, frames_dir, bundle_dir, features_dir, features_visualization_dir]:
+    for folder in [
+        output_data_dir,
+        gt_dir,
+        frames_dir,
+        bundle_dir,
+        features_dir,
+        features_visualization_dir,
+    ]:
         Path(folder).mkdir(parents=True, exist_ok=True)
 
     # Clear out the bundles
@@ -131,7 +139,8 @@ def create_training_data(config_path):
         print(f"{split} num_images: {len(split_dset.imgs)}")
 
         for video_id in ub.ProgIter(
-            split_dset.index.videos.keys(), desc=f"Creating features for videos in {split}"
+            split_dset.index.videos.keys(),
+            desc=f"Creating features for videos in {split}",
         ):
             video = split_dset.index.videos[video_id]
             video_name = video["name"]
@@ -146,14 +155,15 @@ def create_training_data(config_path):
             video_dset = split_dset.subset(gids=image_ids, copy=True)
 
             # groundtruth
-            with open(f"{gt_dir}/{video_name}.txt", "w") as gt_f, \
-                open(f"{frames_dir}/{video_name}.txt", "w") as frames_f:
+            with open(f"{gt_dir}/{video_name}.txt", "w") as gt_f, open(
+                f"{frames_dir}/{video_name}.txt", "w"
+            ) as frames_f:
                 for image_id in image_ids:
                     image = split_dset.imgs[image_id]
-                    image_n = image["file_name"] # this is the shortened string
+                    image_n = image["file_name"]  # this is the shortened string
 
                     frame_idx, time = time_from_name(image_n)
-                    
+
                     activity_gt = image["activity_gt"]
                     if activity_gt is None:
                         activity_gt = "background"
@@ -161,7 +171,6 @@ def create_training_data(config_path):
                     gt_f.write(f"{activity_gt}\n")
                     frames_f.write(f"{image_n}\n")
 
-            
             # features
             (
                 act_map,
@@ -180,7 +189,7 @@ def create_training_data(config_path):
                 obj_ind_to_label,
                 ann_by_image,
                 feat_version=feat_version,
-                top_k_objects=top_k_objects
+                top_k_objects=top_k_objects,
             )
             print(X.shape)
 
@@ -204,20 +213,31 @@ def create_training_data(config_path):
                         cat = dset.cats[cat_id]["name"]
 
                         if cat == "hand (right)":
-                            right_hand_center = kwimage.Boxes([ann["bbox"]], "xywh").center
-                            right_hand_center = [right_hand_center[0][0][0], right_hand_center[1][0][0]]
+                            right_hand_center = kwimage.Boxes(
+                                [ann["bbox"]], "xywh"
+                            ).center
+                            right_hand_center = [
+                                right_hand_center[0][0][0],
+                                right_hand_center[1][0][0],
+                            ]
                         if cat == "hand (left)":
-                            left_hand_center = kwimage.Boxes([ann["bbox"]], "xywh").center
-                            left_hand_center = [left_hand_center[0][0][0], left_hand_center[1][0][0]]
+                            left_hand_center = kwimage.Boxes(
+                                [ann["bbox"]], "xywh"
+                            ).center
+                            left_hand_center = [
+                                left_hand_center[0][0][0],
+                                left_hand_center[1][0][0],
+                            ]
 
                     plot_feature_vec(
                         image_fn,
-                        right_hand_center, left_hand_center, feature_vec,
+                        right_hand_center,
+                        left_hand_center,
+                        feature_vec,
                         obj_label_to_ind,
                         output_dir=os.path.join(features_visualization_dir, video_name),
                         top_k_objects=top_k_objects,
                         **opts,
-                        
                     )
 
             X = X.T
@@ -225,7 +245,6 @@ def create_training_data(config_path):
 
             np.save(f"{features_dir}/{video_name}.npy", X)
 
-            
             # bundles
             with open(f"{bundle_dir}/{split}.split1.bundle", "a+") as bundle:
                 bundle.write(f"{video_name}.txt\n")
@@ -233,18 +252,18 @@ def create_training_data(config_path):
     print("Done!")
     print(f"Saved training data to {output_data_dir}")
 
+
 def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--config",
-        default="configs/experiment/r18/feat_v6.yaml",
-        help=""
+        "--config", default="configs/experiment/r18/feat_v6.yaml", help=""
     )
 
     args = parser.parse_args()
 
     create_training_data(args.config)
+
 
 if __name__ == "__main__":
     main()

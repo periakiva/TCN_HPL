@@ -70,7 +70,7 @@ class PTGLitModule(LightningModule):
         scheduler: torch.optim.lr_scheduler,
         smoothing_loss: float,
         use_smoothing_loss: bool,
-        topic: str, # medical or cooking
+        topic: str,  # medical or cooking
         data_dir: str,
         num_classes: int,
         compile: bool,
@@ -93,7 +93,7 @@ class PTGLitModule(LightningModule):
         self.net = net
 
         self.topic = topic
-        
+
         # Get Action Names
         mapping_file = f"{self.hparams.data_dir}/{mapping_file_name}"
         file_ptr = open(mapping_file, "r")
@@ -397,9 +397,7 @@ class PTGLitModule(LightningModule):
 
         if self.train_frames is None:
             self.train_frames = {}
-            vid_list_file_train = (
-                f"{self.hparams.data_dir}/splits/train.split1.bundle"
-            )
+            vid_list_file_train = f"{self.hparams.data_dir}/splits/train.split1.bundle"
             with open(vid_list_file_train, "r") as train_f:
                 self.train_videos = train_f.read().split("\n")[:-1]
 
@@ -423,7 +421,7 @@ class PTGLitModule(LightningModule):
 
             frame = self.train_frames[video_name][int(source_frame)]
             frame_idx, time = time_from_name(frame, self.topic)
-            
+
             per_video_frame_gt_preds[video_name][frame_idx] = (int(gt), int(pred))
 
             # print(f"video name: {video_name}, frame index: {frame_idx}, gt: {gt}, pred: {pred}")
