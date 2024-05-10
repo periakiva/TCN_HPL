@@ -119,7 +119,7 @@ class MoveCenterPts(torch.nn.Module):
                         ind += 1
                         obj_rh_dist_x = frame[ind]
                         new_val = obj_rh_dist_x + rhand_delta_x + obj_delta_x if obj_rh_dist_x != 0 else obj_rh_dist_x
-                        frame[ind] = clamp(new_val, -self.im_, self.im_w)
+                        frame[ind] = clamp(new_val, -self.im_w, self.im_w)
 
                         ind += 1
                         obj_rh_dist_y = frame[ind]
@@ -240,7 +240,6 @@ class MoveCenterPts(torch.nn.Module):
                             obj_jointi_dist_y = frame[ind]
                             frame[ind] = obj_jointi_dist_y + obj_delta_y + joint_delta_y if obj_jointi_dist_y != 0 else obj_jointi_dist_y
 
-            import pdb; pdb.set_trace()
             features[i] = frame
         return features
 
