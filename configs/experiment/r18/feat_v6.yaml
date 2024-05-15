@@ -32,10 +32,16 @@ model:
     dim: 297 # length of feature vector when top_k_objects=1
     #dim: 506 # length of feature vector when top_k_objects=2
 
+# LIVE HZ
+IMAGE_HZ: 30 # zed bags
+#IMAGE_HZ: 15 # BBN hololens live
+OBJECT_DET_HZ: 15
+POSE_HZ: 5
 
 # GENERATE TRAINING DATA
 data_gen:
   top_k_objects: 1
+  pose_repeat_rate: 6 # ${IMAGE_HZ} / ${POSE_HZ}
   
   data_type: "pro"
   dataset_kwcoco: "/data/PTG/medical/training/yolo_object_detector/detect/r18_all/r18_all_all_obj_results_with_dets_and_pose.mscoco.json"
@@ -61,27 +67,22 @@ data_gen:
   activity_config_fn: "/home/local/KHQ/hannah.defazio/angel_system/config/activity_labels/medical/r18.yaml"
 
   # This matches the folder name created in the data generator
-  exp_name: "${task}_${data_gen.data_type}_data_top_${data_gen.top_k_objects}_objs_feat_v${feature_version}_NEW_ORDER"
+  exp_ext: "_NEW_ORDER_fix_overlap_gt" # anything unique about this run that isn't already in  exp_name
+  exp_name: "${task}_${data_gen.data_type}_data_top_${data_gen.top_k_objects}_objs_feat_v${feature_version}_pose_rate_${data_gen.pose_repeat_rate}${data_gen.exp_ext}"
 
 # TRAINING
-exp_name: ${data_gen.exp_name}_win_25_norm
-
-paths:
-  data_dir: "/data/PTG/medical/training/activity_classifier/TCN_data/${task}/${data_gen.exp_name}"
-  root_dir: "/data/PTG/medical/training/activity_classifier/TCN_HPL/"
-
 data:
   num_classes: 6 # activities: includes background
   batch_size: 512
   num_workers: 0
   epoch_length: 20000
   window_size: 25
-  sample_rate: 1
+  sample_rate: 2 # ${IMAGE_HZ} / ${OBJECT_DET_HZ}
 
   # AUGMENTATIONS
   all_transforms:
-    train_order: ["MoveCenterPts", "NormalizePixelPts"]
-    test_order: ["NormalizePixelPts"]
+    train_order: [] #["MoveCenterPts", "NormalizePixelPts"]
+    test_order: [] #["NormalizePixelPts"]
     MoveCenterPts:
         feat_version: ${feature_version}
         num_obj_classes: 6 # not including background, includes hands
@@ -91,6 +92,12 @@ data:
       feat_version: ${feature_version}
       num_obj_classes: 6 # not including background, includes hands
       top_k_objects: ${data_gen.top_k_objects}
+
+exp_name: ${data_gen.exp_name}_win_${data.window_size}_obj_sample_${data.sample_rate}
+
+paths:
+  data_dir: "/data/PTG/medical/training/activity_classifier/TCN_data/${task}/${data_gen.exp_name}"
+  root_dir: "/data/PTG/medical/training/activity_classifier/TCN_HPL/"
 
 logger:
   aim:
