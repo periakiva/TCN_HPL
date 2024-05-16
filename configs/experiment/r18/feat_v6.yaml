@@ -36,12 +36,12 @@ model:
 IMAGE_HZ: 30 # zed bags
 #IMAGE_HZ: 15 # BBN hololens live
 OBJECT_DET_HZ: 15
-POSE_HZ: 5
+POSE_HZ: 4
 
 # GENERATE TRAINING DATA
 data_gen:
   top_k_objects: 1
-  pose_repeat_rate: 6 # ${IMAGE_HZ} / ${POSE_HZ}
+  pose_repeat_rate: 7.5 # ${IMAGE_HZ} / ${POSE_HZ}
   
   data_type: "pro"
   dataset_kwcoco: "/data/PTG/medical/training/yolo_object_detector/detect/r18_all/r18_all_all_obj_results_with_dets_and_pose.mscoco.json"
@@ -67,7 +67,7 @@ data_gen:
   activity_config_fn: "/home/local/KHQ/hannah.defazio/angel_system/config/activity_labels/medical/r18.yaml"
 
   # This matches the folder name created in the data generator
-  exp_ext: "_NEW_ORDER_fix_overlap_gt" # anything unique about this run that isn't already in  exp_name
+  exp_ext: "_NEW_ORDER_fix_overlap_gt" # anything unique about this run that isn't already in ``exp_name``
   exp_name: "${task}_${data_gen.data_type}_data_top_${data_gen.top_k_objects}_objs_feat_v${feature_version}_pose_rate_${data_gen.pose_repeat_rate}${data_gen.exp_ext}"
 
 # TRAINING
@@ -86,8 +86,11 @@ data:
     MoveCenterPts:
         feat_version: ${feature_version}
         num_obj_classes: 6 # not including background, includes hands
+        top_k_objects: ${data_gen.top_k_objects}
     NormalizeFromCenter:
       feat_version: ${feature_version}
+      num_obj_classes: 6 # not including background, includes hands
+      top_k_objects: ${data_gen.top_k_objects}
     NormalizePixelPts:
       feat_version: ${feature_version}
       num_obj_classes: 6 # not including background, includes hands
