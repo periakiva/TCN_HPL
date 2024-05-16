@@ -197,7 +197,7 @@ def create_training_data(config_path):
             print(X.shape)
 
             # Draw the feature vector for the first video
-            if False: #video_id == list(split_dset.index.videos.keys())[0]:
+            if video_id == list(split_dset.index.videos.keys())[0]:
                 opts = feature_version_to_options(feat_version)
                 gid_to_aids = dset.index.gid_to_aids
                 for image_id, feature_vec in zip(image_ids, X):
