@@ -47,6 +47,8 @@ def create_training_data(config_path):
     blue_glove_vids = config["data_gen"].get("blue_glove_vids", [])
     activity_config_fn = config["data_gen"]["activity_config_fn"]
     top_k_objects = config["data_gen"]["top_k_objects"]
+    pose_repeat_rate = config["data_gen"]["pose_repeat_rate"]
+    exp_ext = config["data_gen"]["exp_ext"]
 
     dset = kwcoco.CocoDataset(config["data_gen"]["dataset_kwcoco"])
     # Check if the dest has activity gt, if it doesn't then add it
@@ -86,7 +88,7 @@ def create_training_data(config_path):
     #####################
     # Output
     #####################
-    exp_name = f"{task_name}_{task_data_type}_data_top_{top_k_objects}_objs_feat_v{feat_version}_NEW_ORDER"
+    exp_name = f"{task_name}_{task_data_type}_data_top_{top_k_objects}_objs_feat_v{feat_version}_pose_rate_{pose_repeat_rate}{exp_ext}"
     data_dir = f"/data/PTG/{topic}/training/activity_classifier"
     output_data_dir = f"{data_dir}/TCN_data/{task_name}/{exp_name}"
     print(output_data_dir)
@@ -190,6 +192,7 @@ def create_training_data(config_path):
                 ann_by_image,
                 feat_version=feat_version,
                 top_k_objects=top_k_objects,
+                pose_repeat_rate=pose_repeat_rate
             )
             print(X.shape)
 
