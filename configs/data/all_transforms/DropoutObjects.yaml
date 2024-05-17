@@ -1,0 +1,7 @@
+DropoutObjects:
+  _target_: tcn_hpl.data.components.augmentations.DropoutObjects
+  skip_stride: 3
+  dropout_last: false
+  num_obj_classes: 42
+  feat_version: 2
+  top_k_objects: 1
