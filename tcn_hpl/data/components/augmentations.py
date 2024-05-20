@@ -733,15 +733,13 @@ class NormalizeFromCenter(torch.nn.Module):
 class DropoutObjects(torch.nn.Module):
     """Drop out Objects """
 
-    def __init__(self, skip_stride, dropout_last, num_obj_classes, feat_version, top_k_objects):
+    def __init__(self, dropout_probablity, num_obj_classes, feat_version, top_k_objects):
         """
-        :param skip_stride: average number of objects to skip 
-        :param dropout_last: Whether to always drop out the last object frame
+        :param dropout_probablity: probablity that a given frame will NOT have an object 
         """
         super().__init__()
 
-        self.skip_stride = skip_stride
-        self.dropout_last = dropout_last
+        self.dropout_probablity = dropout_probablity
 
         self.num_obj_classes = num_obj_classes
         self.num_non_obj_classes = 2  # hands
@@ -843,8 +841,7 @@ class DropoutObjects(torch.nn.Module):
         # Pick starting location of random mask
         start = random.randint(0,self.skip_stride)
         # Create mask (one element for each frame)
-        mask = torch.ones(num_frames)
-        mask[start::self.skip_stride] = 0
+        mask = torch.rand(num_frames) > self.dropout_probablity
 
         if self.dropout_last:
             mask[-1] = 0
