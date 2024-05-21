@@ -55,7 +55,7 @@ def log_hyperparameters(object_dict: Dict[str, Any]) -> None:
     hparams["seed"] = cfg.get("seed")
     
 
-    hparams["model"] = cfg
+    hparams["cfg"] = cfg
 
     # send hparams to all loggers
     for logger in trainer.loggers:
