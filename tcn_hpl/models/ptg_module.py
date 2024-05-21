@@ -92,6 +92,9 @@ class PTGLitModule(LightningModule):
 
         self.net = net
 
+        # Don't popup figures
+        plt.ioff()
+
         self.topic = topic
 
         # Get Action Names
@@ -364,6 +367,10 @@ class PTGLitModule(LightningModule):
             "train/acc", self.train_acc, on_step=False, on_epoch=True, prog_bar=True
         )
 
+        self.log(
+            "train/lr", self.lr_schedulers().get_last_lr()[0], on_step=False, on_epoch=True, prog_bar=True
+        )
+
         self.training_step_outputs_target.append(targets[:, -1])
         self.training_step_outputs_source_vid.append(source_vid[:, -1])
         self.training_step_outputs_source_frame.append(source_frame[:, -1])
@@ -410,7 +417,7 @@ class PTGLitModule(LightningModule):
                 self.train_frames[video[:-4]] = train_fns
 
         per_video_frame_gt_preds = {}
-
+        
         for (gt, pred, source_vid, source_frame) in zip(
             all_targets, all_preds, all_source_vids, all_source_frames
         ):

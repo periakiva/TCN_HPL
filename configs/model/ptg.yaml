@@ -11,7 +11,7 @@ scheduler:
   _partial_: true
   mode: min
   factor: 0.1
-  patience: 10
+  patience: 100000
 
 net:
   _target_: tcn_hpl.models.components.ms_tcs_net.MultiStageModel
