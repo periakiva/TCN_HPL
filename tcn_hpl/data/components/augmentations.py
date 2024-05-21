@@ -739,6 +739,8 @@ class DropoutObjects(torch.nn.Module):
         """
         super().__init__()
 
+        raise NotImplementedError
+
         self.dropout_probablity = dropout_probablity
 
         self.num_obj_classes = num_obj_classes
