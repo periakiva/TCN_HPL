@@ -4,3 +4,4 @@ NormalizePixelPts:
   im_h: 720
   num_obj_classes: 42
   feat_version: 2
+  top_k_objects: 1

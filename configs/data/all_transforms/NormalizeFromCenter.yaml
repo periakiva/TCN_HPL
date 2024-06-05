@@ -2,4 +2,6 @@ NormalizeFromCenter:
   _target_: tcn_hpl.data.components.augmentations.NormalizeFromCenter
   im_w: 1280
   im_h: 720
-  feat_version: 3
+  num_obj_classes: 42
+  feat_version: 2
+  top_k_objects: 1

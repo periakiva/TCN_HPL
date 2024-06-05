@@ -4,7 +4,7 @@
 # python train.py experiment=example
 topic: "medical"
 task: "r18"
-feature_version: 6
+feature_version: 5
 
 defaults:
   - override /data: ptg
@@ -16,22 +16,21 @@ defaults:
 
 # all parameters below will be merged with parameters from default configurations set above
 
-tags: ["r18", "ms_tcn", "debug"]
+tags: ["r18", "ms_tcn"]
 
 seed: 12345
 
 trainer:
   min_epochs: 50
   max_epochs: 500
-  log_every_n_steps: 1
 
 
 model:
   compile: false
 
   net:
-    dim: 297 # length of feature vector when top_k_objects=1
-    #dim: 506 # length of feature vector when top_k_objects=2
+    dim: 33 # length of feature vector when top_k_objects=1
+    #dim: xx # length of feature vector when top_k_objects=2
 
 # LIVE HZ
 IMAGE_HZ: 30 # zed bags
@@ -42,7 +41,7 @@ POSE_HZ: 4
 # GENERATE TRAINING DATA
 data_gen:
   top_k_objects: 1
-  pose_repeat_rate: 7.5 # ${IMAGE_HZ} / ${POSE_HZ}
+  pose_repeat_rate: 0 # Not applicable for this feature version
   
   data_type: "pro"
   dataset_kwcoco: "/data/PTG/medical/training/yolo_object_detector/detect/r18_all/r18_all_all_obj_results_with_dets_and_pose.mscoco.json"
@@ -68,14 +67,14 @@ data_gen:
   activity_config_fn: "/home/local/KHQ/hannah.defazio/angel_system/config/activity_labels/medical/r18.yaml"
 
   # This matches the folder name created in the data generator
-  exp_ext: "_NEW_ORDER_fix_overlap_gt" # anything unique about this run that isn't already in ``exp_name``
+  exp_ext: "_NEW_ORDER_fix_overlap_gt" # anything unique about this run that isn't already in  exp_name
   exp_name: "${task}_${data_gen.data_type}_data_top_${data_gen.top_k_objects}_objs_feat_v${feature_version}_pose_rate_${data_gen.pose_repeat_rate}${data_gen.exp_ext}"
 
 # TRAINING
 data:
   num_classes: 6 # activities: includes background
   batch_size: 512
-  num_workers: 12
+  num_workers: 0
   epoch_length: 20000
   window_size: 25
   sample_rate: 2 # ${IMAGE_HZ} / ${OBJECT_DET_HZ}

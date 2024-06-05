@@ -2,6 +2,7 @@ defaults:
   - MoveCenterPts
   - NormalizePixelPts
   - NormalizeFromCenter
+  - ActivationDelta
   - _self_
 
 train_order: ['MoveCenterPts', 'NormalizePixelPts']

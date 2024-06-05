@@ -76,7 +76,7 @@ class SingleStageModel(nn.Module):
         self.conv_1x1 = nn.Conv1d(dim, num_f_maps, 1)
         self.layers = nn.ModuleList(
             [
-                copy.deepcopy(DilatedResidualLayer(2**i, num_f_maps, num_f_maps))
+                copy.deepcopy(DilatedResidualLayer(2 ** i, num_f_maps, num_f_maps))
                 for i in range(num_layers)
             ]
         )
