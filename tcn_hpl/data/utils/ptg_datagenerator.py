@@ -22,20 +22,10 @@ from angel_system.activity_classification.utils import (
 
 from angel_system.data.medical.data_paths import TASK_TO_NAME
 from angel_system.data.medical.data_paths import LAB_TASK_TO_NAME
-
-
-TASK_TO_NAME = {
-    "m1": "M1_Trauma_Assessment",
-    "m2": "M2_Tourniquet",
-    "m3": "M3_Pressure_Dressing",
-    "m4": "M4_Wound_Packing",
-    "m5": "M5_X-Stat",
-    "r18": "R18_Chest_Seal",
-}
+from angel_system.data.medical.load_bbn_data import bbn_activity_txt_to_csv
 
 
 def bbn_to_dive(raw_data_root, dive_output_dir, task, label_mapping, label_version=1):
-    from angel_system.data.medical.load_bbn_data import bbn_activity_txt_to_csv
     used_videos = bbn_activity_txt_to_csv(task=task, root_dir=raw_data_root, 
                                         output_dir=dive_output_dir, label_mapping=label_mapping,
                                         label_version=label_version)
