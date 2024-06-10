@@ -200,9 +200,6 @@ class PTGLitModule(LightningModule):
         :param m: A tensor of mask of the valid frames.
         :return: A tensor of logits.
         """
-
-        # print(f"size of features: {x.nelement()}")
-        # print(f"element size: {x.element_size()}")
         return self.net(x, m)
 
     def on_train_start(self) -> None:

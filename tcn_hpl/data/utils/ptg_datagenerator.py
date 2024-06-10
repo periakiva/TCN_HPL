@@ -70,9 +70,9 @@ def create_training_data(config_path):
     dive_output_root = config["data_gen"]["dive_output_root"]
 
 
-    def filter_dset_by_split(split):
+    def filter_dset_by_split(split, dataset_to_split):
         # Filter by video names
-        video_lookup = dset.index.name_to_video
+        video_lookup = dataset_to_split.index.name_to_video
         split_vidids = []
         split_img_ids = []
         for index in config["data_gen"][split]:
@@ -93,9 +93,9 @@ def create_training_data(config_path):
                 continue
 
             split_vidids.append(video_name)
-            split_img_ids.extend(list(dset.index.vidid_to_gids[vid]))
+            split_img_ids.extend(list(dataset_to_split.index.vidid_to_gids[vid]))
 
-        split_dset = dset.subset(gids=split_img_ids, copy=True)
+        split_dset = dataset_to_split.subset(gids=split_img_ids, copy=True)
         return split_dset
 
     #####################
@@ -149,15 +149,6 @@ def create_training_data(config_path):
             if label_str == "done":
                 continue
             mapping.write(f"{i} {label_str}\n")
-
-
-    # with open(f"{output_data_dir}/mapping.txt", "w") as mapping:
-    #     for label in activity_labels:
-    #         i = label["id"]
-    #         label_str = label["label"]
-    #         if label_str == "done":
-    #             continue
-    #         mapping.write(f"{i} {label_str}\n")
     
     print(f"label mapping: {activity_labels_desc_mapping}")
     # exit()
@@ -166,7 +157,7 @@ def create_training_data(config_path):
     if not "activity_gt" in list(dset.imgs.values())[0].keys():
         print("adding activity ground truth to the dataset")
         from angel_system.data.common.kwcoco_utils import add_activity_gt_to_kwcoco
-
+        
         #generate dive files for videos in dataset if it does not exist
         video_id = list(dset.index.videos.keys())[0]
         video = dset.index.videos[video_id]
@@ -188,7 +179,7 @@ def create_training_data(config_path):
     #####################
     for split in ["train", "val", "test"]:
         print(f"==== {split} ====")
-        split_dset = filter_dset_by_split(f"{split}_vid_ids")
+        split_dset = filter_dset_by_split(f"{split}_vid_ids", dset)
         print(f"{split} num_images: {len(split_dset.imgs)}")
 
         for video_id in ub.ProgIter(
