@@ -158,11 +158,11 @@ def create_training_data(config_path):
     #         if label_str == "done":
     #             continue
     #         mapping.write(f"{i} {label_str}\n")
+    
     print(f"label mapping: {activity_labels_desc_mapping}")
     # exit()
     dset = kwcoco.CocoDataset(config["data_gen"]["dataset_kwcoco"])
     # Check if the dest has activity gt, if it doesn't then add it
-    print(f"dset.imgs.values())[0]: {list(dset.imgs.values())[0]}")
     if not "activity_gt" in list(dset.imgs.values())[0].keys():
         print("adding activity ground truth to the dataset")
         from angel_system.data.common.kwcoco_utils import add_activity_gt_to_kwcoco
@@ -174,16 +174,10 @@ def create_training_data(config_path):
         activity_gt_dir = f"{dive_output_root}/{task_name}_labels/"
         activity_gt_fn = f"{activity_gt_dir}/{video_name}_activity_labels_v1.csv"
         print(f"activity_gt_dir: {activity_gt_dir}, activity_gt_fn: {activity_gt_fn}")
-        # exit()
-        # if not os.path.exists(activity_gt_fn):
+
         used_videos = bbn_to_dive(raw_data_root, activity_gt_dir, task_name, activity_labels_desc_mapping)
         video_ids_to_remove = [vid for vid, value in dset.index.videos.items() if value['name'] not in used_videos]
-        print(dset.index.videos)
-        print(f"used videos: {used_videos}")
-        print(f"video_ids_to_remove: {video_ids_to_remove}")
         dset.remove_videos(video_ids_to_remove)
-        print(dset.index.videos)
-        # exit()
         
         dset = add_activity_gt_to_kwcoco(topic, task_name, dset, activity_config_fn)
     
@@ -254,51 +248,51 @@ def create_training_data(config_path):
             print(X.shape)
 
             # Draw the feature vector for the first video
-            # if video_id == list(split_dset.index.videos.keys())[0]:
-            #     opts = feature_version_to_options(feat_version)
-            #     gid_to_aids = dset.index.gid_to_aids
-            #     for image_id, feature_vec in zip(image_ids, X):
-            #         image = split_dset.imgs[image_id]
-            #         image_fn = image["file_name"]
-            #         print("fn", image_fn)
+            if video_id == list(split_dset.index.videos.keys())[0]:
+                opts = feature_version_to_options(feat_version)
+                gid_to_aids = dset.index.gid_to_aids
+                for image_id, feature_vec in zip(image_ids, X):
+                    image = split_dset.imgs[image_id]
+                    image_fn = image["file_name"]
+                    print("fn", image_fn)
 
-            #         aids = gid_to_aids[image_id]
-            #         anns = ub.dict_subset(dset.anns, aids)
+                    aids = gid_to_aids[image_id]
+                    anns = ub.dict_subset(dset.anns, aids)
 
-            #         default_center = [0, 0]
-            #         right_hand_center = default_center
-            #         left_hand_center = default_center
-            #         for aid, ann in anns.items():
-            #             cat_id = ann["category_id"]
-            #             cat = dset.cats[cat_id]["name"]
+                    default_center = [0, 0]
+                    right_hand_center = default_center
+                    left_hand_center = default_center
+                    for aid, ann in anns.items():
+                        cat_id = ann["category_id"]
+                        cat = dset.cats[cat_id]["name"]
 
-            #             if cat == "hand (right)":
-            #                 right_hand_center = kwimage.Boxes(
-            #                     [ann["bbox"]], "xywh"
-            #                 ).center
-            #                 right_hand_center = [
-            #                     right_hand_center[0][0][0],
-            #                     right_hand_center[1][0][0],
-            #                 ]
-            #             if cat == "hand (left)":
-            #                 left_hand_center = kwimage.Boxes(
-            #                     [ann["bbox"]], "xywh"
-            #                 ).center
-            #                 left_hand_center = [
-            #                     left_hand_center[0][0][0],
-            #                     left_hand_center[1][0][0],
-            #                 ]
+                        if cat == "hand (right)":
+                            right_hand_center = kwimage.Boxes(
+                                [ann["bbox"]], "xywh"
+                            ).center
+                            right_hand_center = [
+                                right_hand_center[0][0][0],
+                                right_hand_center[1][0][0],
+                            ]
+                        if cat == "hand (left)":
+                            left_hand_center = kwimage.Boxes(
+                                [ann["bbox"]], "xywh"
+                            ).center
+                            left_hand_center = [
+                                left_hand_center[0][0][0],
+                                left_hand_center[1][0][0],
+                            ]
 
-            #         plot_feature_vec(
-            #             image_fn,
-            #             right_hand_center,
-            #             left_hand_center,
-            #             feature_vec,
-            #             obj_label_to_ind,
-            #             output_dir=os.path.join(features_visualization_dir, video_name),
-            #             top_k_objects=top_k_objects,
-            #             **opts,
-            #         )
+                    plot_feature_vec(
+                        image_fn,
+                        right_hand_center,
+                        left_hand_center,
+                        feature_vec,
+                        obj_label_to_ind,
+                        output_dir=os.path.join(features_visualization_dir, video_name),
+                        top_k_objects=top_k_objects,
+                        **opts,
+                    )
 
             X = X.T
             print(f"X after transpose: {X.shape}")
