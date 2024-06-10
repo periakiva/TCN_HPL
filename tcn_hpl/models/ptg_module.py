@@ -201,6 +201,8 @@ class PTGLitModule(LightningModule):
         :return: A tensor of logits.
         """
 
+        # print(f"size of features: {x.nelement()}")
+        # print(f"element size: {x.element_size()}")
         return self.net(x, m)
 
     def on_train_start(self) -> None:
@@ -326,9 +328,9 @@ class PTGLitModule(LightningModule):
             "train/acc", self.train_acc, on_step=False, on_epoch=True, prog_bar=True
         )
 
-        self.log(
-            "train/lr", self.lr_schedulers().get_last_lr()[0], on_step=False, on_epoch=True, prog_bar=True
-        )
+        # self.log(
+        #     "train/lr", self.lr_schedulers().state_dict()[[0], on_step=False, on_epoch=True, prog_bar=True
+        # )
 
         self.training_step_outputs_target.append(targets[:, -1])
         self.training_step_outputs_source_vid.append(source_vid[:, -1])
