@@ -24,6 +24,23 @@ from angel_system.data.medical.data_paths import TASK_TO_NAME
 from angel_system.data.medical.data_paths import LAB_TASK_TO_NAME
 
 
+TASK_TO_NAME = {
+    "m1": "M1_Trauma_Assessment",
+    "m2": "M2_Tourniquet",
+    "m3": "M3_Pressure_Dressing",
+    "m4": "M4_Wound_Packing",
+    "m5": "M5_X-Stat",
+    "r18": "R18_Chest_Seal",
+}
+
+
+def bbn_to_dive(raw_data_root, dive_output_dir, task, label_mapping, label_version=1):
+    from angel_system.data.medical.load_bbn_data import bbn_activity_txt_to_csv
+    used_videos = bbn_activity_txt_to_csv(task=task, root_dir=raw_data_root, 
+                                        output_dir=dive_output_dir, label_mapping=label_mapping,
+                                        label_version=label_version)
+    return used_videos
+
 def create_training_data(config_path):
     #####################
     # Input
@@ -49,14 +66,9 @@ def create_training_data(config_path):
     top_k_objects = config["data_gen"]["top_k_objects"]
     pose_repeat_rate = config["data_gen"]["pose_repeat_rate"]
     exp_ext = config["data_gen"]["exp_ext"]
+    raw_data_root = f"{config['data_gen']['raw_data_root']}/{TASK_TO_NAME[task_name]}/Data"
+    dive_output_root = config["data_gen"]["dive_output_root"]
 
-    dset = kwcoco.CocoDataset(config["data_gen"]["dataset_kwcoco"])
-    # Check if the dest has activity gt, if it doesn't then add it
-    if not "activity_gt" in list(dset.imgs.values())[0].keys():
-        print("adding activity ground truth to the dataset")
-        from angel_system.data.common.kwcoco_utils import add_activity_gt_to_kwcoco
-
-        dset = add_activity_gt_to_kwcoco(topic, task_name, dset, activity_config_fn)
 
     def filter_dset_by_split(split):
         # Filter by video names
@@ -65,6 +77,7 @@ def create_training_data(config_path):
         split_img_ids = []
         for index in config["data_gen"][split]:
             video_name = f"{task_name.upper()}-{index}"
+            print(f"video name: {video_name}")
 
             # Make sure we have the video
             if video_name in video_lookup:
@@ -122,14 +135,58 @@ def create_training_data(config_path):
         activity_config = yaml.safe_load(stream)
     activity_labels = activity_config["labels"]
 
+    activity_labels_desc_mapping = {}
     with open(f"{output_data_dir}/mapping.txt", "w") as mapping:
         for label in activity_labels:
             i = label["id"]
             label_str = label["label"]
+            if "description" in label.keys():
+                # activity_labels_desc_mapping[label["description"]] = label["label"]
+                activity_labels_desc_mapping[label["description"]] = label["id"]
+            elif "full_str" in label.keys():
+                # activity_labels_desc_mapping[label["full_str"]] = label["label"]
+                activity_labels_desc_mapping[label["full_str"]] = label["id"]
             if label_str == "done":
                 continue
             mapping.write(f"{i} {label_str}\n")
 
+
+    # with open(f"{output_data_dir}/mapping.txt", "w") as mapping:
+    #     for label in activity_labels:
+    #         i = label["id"]
+    #         label_str = label["label"]
+    #         if label_str == "done":
+    #             continue
+    #         mapping.write(f"{i} {label_str}\n")
+    print(f"label mapping: {activity_labels_desc_mapping}")
+    # exit()
+    dset = kwcoco.CocoDataset(config["data_gen"]["dataset_kwcoco"])
+    # Check if the dest has activity gt, if it doesn't then add it
+    print(f"dset.imgs.values())[0]: {list(dset.imgs.values())[0]}")
+    if not "activity_gt" in list(dset.imgs.values())[0].keys():
+        print("adding activity ground truth to the dataset")
+        from angel_system.data.common.kwcoco_utils import add_activity_gt_to_kwcoco
+
+        #generate dive files for videos in dataset if it does not exist
+        video_id = list(dset.index.videos.keys())[0]
+        video = dset.index.videos[video_id]
+        video_name = video["name"]
+        activity_gt_dir = f"{dive_output_root}/{task_name}_labels/"
+        activity_gt_fn = f"{activity_gt_dir}/{video_name}_activity_labels_v1.csv"
+        print(f"activity_gt_dir: {activity_gt_dir}, activity_gt_fn: {activity_gt_fn}")
+        # exit()
+        # if not os.path.exists(activity_gt_fn):
+        used_videos = bbn_to_dive(raw_data_root, activity_gt_dir, task_name, activity_labels_desc_mapping)
+        video_ids_to_remove = [vid for vid, value in dset.index.videos.items() if value['name'] not in used_videos]
+        print(dset.index.videos)
+        print(f"used videos: {used_videos}")
+        print(f"video_ids_to_remove: {video_ids_to_remove}")
+        dset.remove_videos(video_ids_to_remove)
+        print(dset.index.videos)
+        # exit()
+        
+        dset = add_activity_gt_to_kwcoco(topic, task_name, dset, activity_config_fn)
+    
     #####################
     # Features,
     # groundtruth and
@@ -197,51 +254,51 @@ def create_training_data(config_path):
             print(X.shape)
 
             # Draw the feature vector for the first video
-            if video_id == list(split_dset.index.videos.keys())[0]:
-                opts = feature_version_to_options(feat_version)
-                gid_to_aids = dset.index.gid_to_aids
-                for image_id, feature_vec in zip(image_ids, X):
-                    image = split_dset.imgs[image_id]
-                    image_fn = image["file_name"]
-                    print("fn", image_fn)
+            # if video_id == list(split_dset.index.videos.keys())[0]:
+            #     opts = feature_version_to_options(feat_version)
+            #     gid_to_aids = dset.index.gid_to_aids
+            #     for image_id, feature_vec in zip(image_ids, X):
+            #         image = split_dset.imgs[image_id]
+            #         image_fn = image["file_name"]
+            #         print("fn", image_fn)
 
-                    aids = gid_to_aids[image_id]
-                    anns = ub.dict_subset(dset.anns, aids)
+            #         aids = gid_to_aids[image_id]
+            #         anns = ub.dict_subset(dset.anns, aids)
 
-                    default_center = [0, 0]
-                    right_hand_center = default_center
-                    left_hand_center = default_center
-                    for aid, ann in anns.items():
-                        cat_id = ann["category_id"]
-                        cat = dset.cats[cat_id]["name"]
+            #         default_center = [0, 0]
+            #         right_hand_center = default_center
+            #         left_hand_center = default_center
+            #         for aid, ann in anns.items():
+            #             cat_id = ann["category_id"]
+            #             cat = dset.cats[cat_id]["name"]
 
-                        if cat == "hand (right)":
-                            right_hand_center = kwimage.Boxes(
-                                [ann["bbox"]], "xywh"
-                            ).center
-                            right_hand_center = [
-                                right_hand_center[0][0][0],
-                                right_hand_center[1][0][0],
-                            ]
-                        if cat == "hand (left)":
-                            left_hand_center = kwimage.Boxes(
-                                [ann["bbox"]], "xywh"
-                            ).center
-                            left_hand_center = [
-                                left_hand_center[0][0][0],
-                                left_hand_center[1][0][0],
-                            ]
+            #             if cat == "hand (right)":
+            #                 right_hand_center = kwimage.Boxes(
+            #                     [ann["bbox"]], "xywh"
+            #                 ).center
+            #                 right_hand_center = [
+            #                     right_hand_center[0][0][0],
+            #                     right_hand_center[1][0][0],
+            #                 ]
+            #             if cat == "hand (left)":
+            #                 left_hand_center = kwimage.Boxes(
+            #                     [ann["bbox"]], "xywh"
+            #                 ).center
+            #                 left_hand_center = [
+            #                     left_hand_center[0][0][0],
+            #                     left_hand_center[1][0][0],
+            #                 ]
 
-                    plot_feature_vec(
-                        image_fn,
-                        right_hand_center,
-                        left_hand_center,
-                        feature_vec,
-                        obj_label_to_ind,
-                        output_dir=os.path.join(features_visualization_dir, video_name),
-                        top_k_objects=top_k_objects,
-                        **opts,
-                    )
+            #         plot_feature_vec(
+            #             image_fn,
+            #             right_hand_center,
+            #             left_hand_center,
+            #             feature_vec,
+            #             obj_label_to_ind,
+            #             output_dir=os.path.join(features_visualization_dir, video_name),
+            #             top_k_objects=top_k_objects,
+            #             **opts,
+            #         )
 
             X = X.T
             print(f"X after transpose: {X.shape}")
