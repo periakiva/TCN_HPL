@@ -23,7 +23,7 @@ from angel_system.activity_classification.utils import (
 from angel_system.data.medical.data_paths import TASK_TO_NAME
 from angel_system.data.medical.data_paths import LAB_TASK_TO_NAME
 from angel_system.data.medical.load_bbn_data import bbn_activity_txt_to_csv
-
+from angel_system.data.common.kwcoco_utils import add_activity_gt_to_kwcoco
 
 def bbn_to_dive(raw_data_root, dive_output_dir, task, label_mapping, label_version=1):
     used_videos = bbn_activity_txt_to_csv(task=task, root_dir=raw_data_root, 
@@ -146,7 +146,6 @@ def create_training_data(config_path):
     # Check if the dest has activity gt, if it doesn't then add it
     if not "activity_gt" in list(dset.imgs.values())[0].keys():
         print("adding activity ground truth to the dataset")
-        from angel_system.data.common.kwcoco_utils import add_activity_gt_to_kwcoco
         
         #generate dive files for videos in dataset if it does not exist
         video_id = list(dset.index.videos.keys())[0]
