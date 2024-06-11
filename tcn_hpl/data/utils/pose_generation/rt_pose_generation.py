@@ -99,19 +99,4 @@ def predict_single(det_model, pose_model, image: torch.tensor) -> list:
                 pose_keypoints = pose_results[0]["keypoints"].tolist()
                 keypoints_list.append(pose_keypoints)
 
-                # pose_keypoints_list = []
-                # for kp_index, keypoint in enumerate(pose_keypoints):
-                #     kp_dict = {'xy': [keypoint[0], keypoint[1]],
-                #             'keypoint_category_id': kp_index,
-                #             'keypoint_category': keypoints_cats[kp_index]}
-                #     pose_keypoints_list.append(kp_dict)
-
-                # # keypoints_list.append(pose_keypoints_list)
-                # # print(f"pose_keypoints_list: {pose_keypoints_list}")
-                # current_ann['keypoints'] = pose_keypoints_list
-                # current_ann['image_features'] = image_features
-
-            # dset.add_annotation(**current_ann)
-
-    # results = []
     return boxes_list, labels_list, keypoints_list

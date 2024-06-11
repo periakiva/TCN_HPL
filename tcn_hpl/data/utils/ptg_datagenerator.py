@@ -22,7 +22,14 @@ from angel_system.activity_classification.utils import (
 
 from angel_system.data.medical.data_paths import TASK_TO_NAME
 from angel_system.data.medical.data_paths import LAB_TASK_TO_NAME
+from angel_system.data.medical.load_bbn_data import bbn_activity_txt_to_csv
+from angel_system.data.common.kwcoco_utils import add_activity_gt_to_kwcoco
 
+def bbn_to_dive(raw_data_root, dive_output_dir, task, label_mapping, label_version=1):
+    used_videos = bbn_activity_txt_to_csv(task=task, root_dir=raw_data_root, 
+                                        output_dir=dive_output_dir, label_mapping=label_mapping,
+                                        label_version=label_version)
+    return used_videos
 
 def create_training_data(config_path):
     #####################
@@ -49,22 +56,18 @@ def create_training_data(config_path):
     top_k_objects = config["data_gen"]["top_k_objects"]
     pose_repeat_rate = config["data_gen"]["pose_repeat_rate"]
     exp_ext = config["data_gen"]["exp_ext"]
+    raw_data_root = f"{config['data_gen']['raw_data_root']}/{TASK_TO_NAME[task_name]}/Data"
+    dive_output_root = config["data_gen"]["dive_output_root"]
 
-    dset = kwcoco.CocoDataset(config["data_gen"]["dataset_kwcoco"])
-    # Check if the dest has activity gt, if it doesn't then add it
-    if not "activity_gt" in list(dset.imgs.values())[0].keys():
-        print("adding activity ground truth to the dataset")
-        from angel_system.data.common.kwcoco_utils import add_activity_gt_to_kwcoco
 
-        dset = add_activity_gt_to_kwcoco(topic, task_name, dset, activity_config_fn)
-
-    def filter_dset_by_split(split):
+    def filter_dset_by_split(split, dataset_to_split):
         # Filter by video names
-        video_lookup = dset.index.name_to_video
+        video_lookup = dataset_to_split.index.name_to_video
         split_vidids = []
         split_img_ids = []
         for index in config["data_gen"][split]:
             video_name = f"{task_name.upper()}-{index}"
+            print(f"video name: {video_name}")
 
             # Make sure we have the video
             if video_name in video_lookup:
@@ -80,9 +83,9 @@ def create_training_data(config_path):
                 continue
 
             split_vidids.append(video_name)
-            split_img_ids.extend(list(dset.index.vidid_to_gids[vid]))
+            split_img_ids.extend(list(dataset_to_split.index.vidid_to_gids[vid]))
 
-        split_dset = dset.subset(gids=split_img_ids, copy=True)
+        split_dset = dataset_to_split.subset(gids=split_img_ids, copy=True)
         return split_dset
 
     #####################
@@ -122,14 +125,42 @@ def create_training_data(config_path):
         activity_config = yaml.safe_load(stream)
     activity_labels = activity_config["labels"]
 
+    activity_labels_desc_mapping = {}
     with open(f"{output_data_dir}/mapping.txt", "w") as mapping:
         for label in activity_labels:
             i = label["id"]
             label_str = label["label"]
+            if "description" in label.keys():
+                # activity_labels_desc_mapping[label["description"]] = label["label"]
+                activity_labels_desc_mapping[label["description"]] = label["id"]
+            elif "full_str" in label.keys():
+                # activity_labels_desc_mapping[label["full_str"]] = label["label"]
+                activity_labels_desc_mapping[label["full_str"]] = label["id"]
             if label_str == "done":
                 continue
             mapping.write(f"{i} {label_str}\n")
+    
+    print(f"label mapping: {activity_labels_desc_mapping}")
+    # exit()
+    dset = kwcoco.CocoDataset(config["data_gen"]["dataset_kwcoco"])
+    # Check if the dest has activity gt, if it doesn't then add it
+    if not "activity_gt" in list(dset.imgs.values())[0].keys():
+        print("adding activity ground truth to the dataset")
+        
+        #generate dive files for videos in dataset if it does not exist
+        video_id = list(dset.index.videos.keys())[0]
+        video = dset.index.videos[video_id]
+        video_name = video["name"]
+        activity_gt_dir = f"{dive_output_root}/{task_name}_labels/"
+        activity_gt_fn = f"{activity_gt_dir}/{video_name}_activity_labels_v1.csv"
+        print(f"activity_gt_dir: {activity_gt_dir}, activity_gt_fn: {activity_gt_fn}")
 
+        used_videos = bbn_to_dive(raw_data_root, activity_gt_dir, task_name, activity_labels_desc_mapping)
+        video_ids_to_remove = [vid for vid, value in dset.index.videos.items() if value['name'] not in used_videos]
+        dset.remove_videos(video_ids_to_remove)
+        
+        dset = add_activity_gt_to_kwcoco(topic, task_name, dset, activity_config_fn)
+    
     #####################
     # Features,
     # groundtruth and
@@ -137,7 +168,7 @@ def create_training_data(config_path):
     #####################
     for split in ["train", "val", "test"]:
         print(f"==== {split} ====")
-        split_dset = filter_dset_by_split(f"{split}_vid_ids")
+        split_dset = filter_dset_by_split(f"{split}_vid_ids", dset)
         print(f"{split} num_images: {len(split_dset.imgs)}")
 
         for video_id in ub.ProgIter(
