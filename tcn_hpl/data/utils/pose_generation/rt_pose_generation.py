@@ -81,14 +81,14 @@ def predict_single(det_model, pose_model, image: torch.tensor, bbox_thr=None) ->
             current_ann["label"] = pred_label
             current_ann["bbox_score"] = f"{scores[box_id] * 100:0.2f}"
 
-            if box_class == 0:
+            if box_class == 0 and float(current_ann["bbox_score"]) > bbox_thr:
                 person_results = [current_ann]
 
                 pose_results, returned_outputs = inference_top_down_pose_model(
                     model=pose_model,
                     img_or_path=image,
                     person_results=person_results,
-                    bbox_thr=bbox_thr,
+                    bbox_thr=None,
                     format="xyxy",
                     dataset=pose_dataset,
                     dataset_info=pose_dataset_info,
