@@ -25,11 +25,17 @@ from angel_system.data.medical.data_paths import LAB_TASK_TO_NAME
 from angel_system.data.medical.load_bbn_data import bbn_activity_txt_to_csv
 from angel_system.data.common.kwcoco_utils import add_activity_gt_to_kwcoco
 
+
 def bbn_to_dive(raw_data_root, dive_output_dir, task, label_mapping, label_version=1):
-    used_videos = bbn_activity_txt_to_csv(task=task, root_dir=raw_data_root, 
-                                        output_dir=dive_output_dir, label_mapping=label_mapping,
-                                        label_version=label_version)
+    used_videos = bbn_activity_txt_to_csv(
+        task=task,
+        root_dir=raw_data_root,
+        output_dir=dive_output_dir,
+        label_mapping=label_mapping,
+        label_version=label_version,
+    )
     return used_videos
+
 
 def create_training_data(config_path):
     #####################
@@ -56,9 +62,10 @@ def create_training_data(config_path):
     top_k_objects = config["data_gen"]["top_k_objects"]
     pose_repeat_rate = config["data_gen"]["pose_repeat_rate"]
     exp_ext = config["data_gen"]["exp_ext"]
-    raw_data_root = f"{config['data_gen']['raw_data_root']}/{TASK_TO_NAME[task_name]}/Data"
+    raw_data_root = (
+        f"{config['data_gen']['raw_data_root']}/{TASK_TO_NAME[task_name]}/Data"
+    )
     dive_output_root = config["data_gen"]["dive_output_root"]
-
 
     def filter_dset_by_split(split, dataset_to_split):
         # Filter by video names
@@ -139,15 +146,15 @@ def create_training_data(config_path):
             if label_str == "done":
                 continue
             mapping.write(f"{i} {label_str}\n")
-    
+
     print(f"label mapping: {activity_labels_desc_mapping}")
     # exit()
     dset = kwcoco.CocoDataset(config["data_gen"]["dataset_kwcoco"])
     # Check if the dest has activity gt, if it doesn't then add it
     if not "activity_gt" in list(dset.imgs.values())[0].keys():
         print("adding activity ground truth to the dataset")
-        
-        #generate dive files for videos in dataset if it does not exist
+
+        # generate dive files for videos in dataset if it does not exist
         video_id = list(dset.index.videos.keys())[0]
         video = dset.index.videos[video_id]
         video_name = video["name"]
@@ -155,12 +162,18 @@ def create_training_data(config_path):
         activity_gt_fn = f"{activity_gt_dir}/{video_name}_activity_labels_v1.csv"
         print(f"activity_gt_dir: {activity_gt_dir}, activity_gt_fn: {activity_gt_fn}")
 
-        used_videos = bbn_to_dive(raw_data_root, activity_gt_dir, task_name, activity_labels_desc_mapping)
-        video_ids_to_remove = [vid for vid, value in dset.index.videos.items() if value['name'] not in used_videos]
+        used_videos = bbn_to_dive(
+            raw_data_root, activity_gt_dir, task_name, activity_labels_desc_mapping
+        )
+        video_ids_to_remove = [
+            vid
+            for vid, value in dset.index.videos.items()
+            if value["name"] not in used_videos
+        ]
         dset.remove_videos(video_ids_to_remove)
-        
+
         dset = add_activity_gt_to_kwcoco(topic, task_name, dset, activity_config_fn)
-    
+
     #####################
     # Features,
     # groundtruth and
@@ -223,7 +236,7 @@ def create_training_data(config_path):
                 ann_by_image,
                 feat_version=feat_version,
                 top_k_objects=top_k_objects,
-                pose_repeat_rate=pose_repeat_rate
+                pose_repeat_rate=pose_repeat_rate,
             )
             print(X.shape)
 

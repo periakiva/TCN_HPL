@@ -244,7 +244,7 @@ class PTGLitModule(LightningModule):
         variation_coef = torch.abs(preds - mode)
         variation_coef = torch.sum(variation_coef, dim=-1)
         gt_variation_coef = torch.zeros_like(variation_coef)
-        
+
         if self.hparams.use_smoothing_loss:
             loss += self.hparams.smoothing_loss * torch.mean(
                 self.mse(
@@ -343,7 +343,7 @@ class PTGLitModule(LightningModule):
 
         # acc = self.train_acc.compute()  # get current val acc
         # self.train_acc_best(acc)  # update best so far val acc
-        
+
         all_targets = torch.cat(self.training_step_outputs_target)  # shape: #frames
         all_preds = torch.cat(self.training_step_outputs_pred)  # shape: #frames
         all_probs = torch.cat(
@@ -369,7 +369,7 @@ class PTGLitModule(LightningModule):
                 self.train_frames[video[:-4]] = train_fns
 
         per_video_frame_gt_preds = {}
-        
+
         for (gt, pred, source_vid, source_frame) in zip(
             all_targets, all_preds, all_source_vids, all_source_frames
         ):
@@ -476,7 +476,6 @@ class PTGLitModule(LightningModule):
         self.validation_step_outputs_pred.append(preds[inds])
         self.validation_step_outputs_prob.append(probs[inds])
 
-
     def on_validation_epoch_end(self) -> None:
         "Lightning hook that is called when a validation epoch ends."
         acc = self.val_acc.compute()  # get current val acc
@@ -488,7 +487,6 @@ class PTGLitModule(LightningModule):
             best_val_acc = self.val_acc_best.compute()
             self.log("val/acc_best", best_val_acc, sync_dist=True, prog_bar=True)
 
-
         all_targets = torch.cat(self.validation_step_outputs_target)  # shape: #frames
         all_preds = torch.cat(self.validation_step_outputs_pred)  # shape: #frames
         all_probs = torch.cat(
@@ -496,7 +494,6 @@ class PTGLitModule(LightningModule):
         )  # shape (#frames, #act labels)
         all_source_vids = torch.cat(self.validation_step_outputs_source_vid)
         all_source_frames = torch.cat(self.validation_step_outputs_source_frame)
-
 
         # Load val vidoes
         if self.val_frames is None:

@@ -727,15 +727,16 @@ class NormalizeFromCenter(torch.nn.Module):
     def __repr__(self) -> str:
         detail = f"(im_w={self.im_w}, im_h={self.im_h}, feat_version={self.feat_version}, top_k_objects={self.top_k_objects})"
         return f"{self.__class__.__name__}{detail}"
-    
 
 
 class DropoutObjects(torch.nn.Module):
-    """Drop out Objects """
+    """Drop out Objects"""
 
-    def __init__(self, dropout_probablity, num_obj_classes, feat_version, top_k_objects):
+    def __init__(
+        self, dropout_probablity, num_obj_classes, feat_version, top_k_objects
+    ):
         """
-        :param dropout_probablity: probablity that a given frame will NOT have an object 
+        :param dropout_probablity: probablity that a given frame will NOT have an object
         """
         super().__init__()
 
@@ -769,8 +770,8 @@ class DropoutObjects(torch.nn.Module):
                 self.obj_feature_mask.append(0)
 
             if self.use_hand_dist:
-                self.obj_feature_mask += [0]*2*self.num_good_obj_classes
-                ind += 2*self.num_good_obj_classes
+                self.obj_feature_mask += [0] * 2 * self.num_good_obj_classes
+                ind += 2 * self.num_good_obj_classes
 
             if self.use_center_dist:
                 # right hand - image center distance
@@ -785,8 +786,8 @@ class DropoutObjects(torch.nn.Module):
 
             if self.use_hand_dist:
                 # Left hand distances
-                self.obj_feature_mask += [0]*2*self.num_good_obj_classes
-                ind += 2*self.num_good_obj_classes
+                self.obj_feature_mask += [0] * 2 * self.num_good_obj_classes
+                ind += 2 * self.num_good_obj_classes
 
             if self.use_center_dist:
                 # left hand - image center distance
@@ -825,34 +826,33 @@ class DropoutObjects(torch.nn.Module):
         if self.use_joint_hand_offset:
             # left hand - joints distances
             ind += 44
-            self.obj_feature_mask += [1]*44
+            self.obj_feature_mask += [1] * 44
 
             # right hand - joints distances
             ind += 44
-            self.obj_feature_mask += [1]*44
+            self.obj_feature_mask += [1] * 44
 
         # OBJS-JOINTS
         if self.use_joint_object_offset:
-            self.obj_feature_mask += [0]*44*self.top_k_objects*self.num_good_obj_classes
-            ind += 44*self.top_k_objects*self.num_good_obj_classes
-                    
+            self.obj_feature_mask += (
+                [0] * 44 * self.top_k_objects * self.num_good_obj_classes
+            )
+            ind += 44 * self.top_k_objects * self.num_good_obj_classes
+
         self.obj_feature_mask = torch.tensor(self.obj_feature_mask)
 
     def forward(self, features):
         num_frames = features.shape[0]
         # Pick starting location of random mask
-        start = random.randint(0,self.skip_stride)
+        start = random.randint(0, self.skip_stride)
         # Create mask (one element for each frame)
         mask = torch.rand(num_frames) > self.dropout_probablity
 
         if self.dropout_last:
             mask[-1] = 0
 
-
-
         return features
 
     def __repr__(self) -> str:
         detail = f"(im_w={self.im_w}, im_h={self.im_h}, num_obj_classes={self.num_obj_classes}, feat_version={self.feat_version}, top_k_objects={self.top_k_objects})"
         return f"{self.__class__.__name__}{detail}"
-
