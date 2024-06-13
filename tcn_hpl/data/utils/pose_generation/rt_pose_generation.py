@@ -5,7 +5,7 @@ from mmpose.datasets import DatasetInfo
 import warnings
 
 
-def predict_single(det_model, pose_model, image: torch.tensor, bbox_thr=None) -> list:
+def predict_single(det_model, pose_model, image: torch.tensor, bbox_thr=0.0) -> list:
 
     keypoints_cats = [
         "nose",
