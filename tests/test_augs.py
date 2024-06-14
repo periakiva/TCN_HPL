@@ -9,9 +9,7 @@ class MoveCenterPts(torch.nn.Module):
     adjusting the distances for each frame
     """
 
-    def __init__(
-        self, num_obj_classes, feat_version
-    ):
+    def __init__(self, num_obj_classes, feat_version):
         """
         :param hand_dist_delta: Decimal percentage to calculate the +-offset in
             pixels for the hands
@@ -49,9 +47,11 @@ class MoveCenterPts(torch.nn.Module):
                     [1, left_dist_idx1],
                     [right_dist_idx2, left_dist_idx2],
                 ):
-                    frame[start_idx:end_idx:2] +=  " + hand_delta_x + obj_delta_x"
+                    frame[start_idx:end_idx:2] += " + hand_delta_x + obj_delta_x"
 
-                    frame[start_idx + 1 : end_idx : 2] += " + hand_delta_y + obj_delta_y"
+                    frame[
+                        start_idx + 1 : end_idx : 2
+                    ] += " + hand_delta_y + obj_delta_y"
 
                 # Distance between hands
                 hands_dist_idx = left_dist_idx2
@@ -59,17 +59,19 @@ class MoveCenterPts(torch.nn.Module):
                 frame[hands_dist_idx] += " + rhand_delta_x + lhand_delta_x"
 
                 frame[hands_dist_idx + 1] += " + rhand_delta_y + lhand_delta_y"
-            
+
             elif self.feat_version == 3:
                 # Right and left hand distances
-                right_idx1 = 1; right_idx2 = 2; 
-                left_idx1 = 4; left_idx2 = 5
+                right_idx1 = 1
+                right_idx2 = 2
+                left_idx1 = 4
+                left_idx2 = 5
                 for start_idx, end_idx in zip(
                     [right_idx1, left_idx1],
                     [right_idx2, left_idx2],
                 ):
                     frame[start_idx] = frame[start_idx] + " + hand_delta_x"
-                    
+
                     frame[end_idx] = frame[end_idx] + " + hand_delta_y"
 
                 # Object distances
@@ -84,6 +86,7 @@ class MoveCenterPts(torch.nn.Module):
 
             features[i] = frame
         return features
+
 
 class ActivationDelta(torch.nn.Module):
     """Update the activation feature of each class by +-``conf_delta``"""
@@ -167,9 +170,9 @@ class NormalizePixelPts(torch.nn.Module):
                 [1, left_dist_idx1], [right_dist_idx2, left_dist_idx2]
             ):
                 features[:, start_idx:end_idx:2] += " / self.im_w"
-                
+
                 features[:, start_idx + 1 : end_idx : 2] += " / self.im_h"
-                
+
             # Distance between hands
             hands_dist_idx = left_dist_idx2
 
@@ -182,12 +185,12 @@ class NormalizePixelPts(torch.nn.Module):
         else:
             NotImplementedError(f"Unhandled version '{self.feat_version}'")
 
-        
         return features
+
 
 class NormalizeFromCenter(torch.nn.Module):
     """Normalize the distances from -1 to 1 with respect to the image center
-    
+
     Missing objects will be set to (2, 2)
     """
 
@@ -210,22 +213,25 @@ class NormalizeFromCenter(torch.nn.Module):
 
         elif self.feat_version == 3:
             # Right and left hand distances
-            right_idx1 = 1; right_idx2 = 2; 
-            left_idx1 = 4; left_idx2 = 5
+            right_idx1 = 1
+            right_idx2 = 2
+            left_idx1 = 4
+            left_idx2 = 5
             for start_idx, end_idx in zip(
                 [right_idx1, left_idx1],
                 [right_idx2, left_idx2],
             ):
                 features[:, start_idx] += " / self.half_w"
-                
-                features[:, end_idx] += " / self.half_h"
 
+                features[:, end_idx] += " / self.half_h"
 
             # Object distances
             start_idx = 10
             while start_idx < features.shape[1]:
                 features[:, start_idx] = features[:, start_idx] + " / self.half_w"
-                features[:, start_idx + 1] = features[:, start_idx + 1] + " / self.half_h"
+                features[:, start_idx + 1] = (
+                    features[:, start_idx + 1] + " / self.half_h"
+                )
                 start_idx += 5
 
         else:
@@ -233,48 +239,51 @@ class NormalizeFromCenter(torch.nn.Module):
 
         return features
 
-   
+
 def main():
     num_obj_classes = 40
     feat_version = 5
 
-    mv_center = MoveCenterPts(num_obj_classes+2, feat_version)
-    act_delta = ActivationDelta(num_obj_classes+2, feat_version)
-    norm = NormalizePixelPts(num_obj_classes+2, feat_version)
+    mv_center = MoveCenterPts(num_obj_classes + 2, feat_version)
+    act_delta = ActivationDelta(num_obj_classes + 2, feat_version)
+    norm = NormalizePixelPts(num_obj_classes + 2, feat_version)
 
     if feat_version == 2:
         feat_v2 = ["A[right hand]"]
         for i in range(num_obj_classes):
             feat_v2.append(f"D[right hand, obj{i+1}]x")
             feat_v2.append(f"D[right hand, obj{i+1}]y")
-                
+
         feat_v2.append("A[left hand]")
         for i in range(num_obj_classes):
             feat_v2.append(f"D[left hand, obj{i+1}]x")
             feat_v2.append(f"D[left hand, obj{i+1}]y")
-        
+
         feat_v2.append("D[right hand, left hand]x")
         feat_v2.append("D[right hand, left hand]y")
 
         for i in range(num_obj_classes):
             feat_v2.append(f"A[obj{i+1}]")
 
-        feat_v2 = np.array([feat_v2], dtype='object')
+        feat_v2 = np.array([feat_v2], dtype="object")
         assert feat_v2.shape == (1, 204)
 
-        #feat_v2_mv_center = mv_center(feat_v2)
-        #feat_v2_act_delta = act_delta(feat_v2)
+        # feat_v2_mv_center = mv_center(feat_v2)
+        # feat_v2_act_delta = act_delta(feat_v2)
         feat_v2_norm = norm(feat_v2)
-        
+
         for i, e in enumerate(feat_v2_norm[0]):
             print(f"{i}: {e}")
 
     elif feat_version == 3:
-        feat_v3 = ["A[right hand]",
-            "D[right hand, center]x", "D[right hand, center]y",
+        feat_v3 = [
+            "A[right hand]",
+            "D[right hand, center]x",
+            "D[right hand, center]y",
             "A[left hand]",
-            "D[left hand, center]x", "D[left hand, center]y",
-            "I[right hand, left hand]"
+            "D[left hand, center]x",
+            "D[left hand, center]y",
+            "I[right hand, left hand]",
         ]
 
         for i in range(num_obj_classes):
@@ -284,13 +293,12 @@ def main():
             feat_v3.append(f"D[obj{i+1}, center]x")
             feat_v3.append(f"D[obj{i+1}, center]y")
 
-        feat_v3 = np.array([feat_v3], dtype='object')
+        feat_v3 = np.array([feat_v3], dtype="object")
         assert feat_v3.shape == (1, 207)
 
-        #feat_v3_mv_center = mv_center(feat_v3)
-        #feat_v3_act_delta = act_delta(feat_v3)
+        # feat_v3_mv_center = mv_center(feat_v3)
+        # feat_v3_act_delta = act_delta(feat_v3)
         feat_v3_norm_center = norm_center(feat_v3)
-
 
         for i, e in enumerate(feat_v3_norm_center[0]):
             print(f"{i}: {e}")
@@ -300,12 +308,12 @@ def main():
         for i in range(num_obj_classes):
             feat_v5.append(f"D[right hand, obj{i+1}]x")
             feat_v5.append(f"D[right hand, obj{i+1}]y")
-                
+
         feat_v5.append("A[left hand]")
         for i in range(num_obj_classes):
             feat_v5.append(f"D[left hand, obj{i+1}]x")
             feat_v5.append(f"D[left hand, obj{i+1}]y")
-        
+
         feat_v5.append("D[right hand, left hand]x")
         feat_v5.append("D[right hand, left hand]y")
 
@@ -316,11 +324,11 @@ def main():
             feat_v5.append(f"I[right hand, obj{i+1}]")
             feat_v5.append(f"I[left hand, obj{i+1}]")
 
-        feat_v5 = np.array([feat_v5], dtype='object')
+        feat_v5 = np.array([feat_v5], dtype="object")
         assert feat_v5.shape == (1, 285)
 
-        #feat_v5_mv_center = mv_center(feat_v5)
-        #feat_v5_act_delta = act_delta(feat_v5)
+        # feat_v5_mv_center = mv_center(feat_v5)
+        # feat_v5_act_delta = act_delta(feat_v5)
         feat_v5_norm = norm(feat_v5)
 
         for i, e in enumerate(feat_v5_norm[0]):

@@ -5,7 +5,7 @@ from mmpose.datasets import DatasetInfo
 import warnings
 
 
-def predict_single(det_model, pose_model, image: torch.tensor) -> list:
+def predict_single(det_model, pose_model, image: torch.tensor, bbox_thr=0.0) -> list:
 
     keypoints_cats = [
         "nose",
@@ -81,7 +81,7 @@ def predict_single(det_model, pose_model, image: torch.tensor) -> list:
             current_ann["label"] = pred_label
             current_ann["bbox_score"] = f"{scores[box_id] * 100:0.2f}"
 
-            if box_class == 0:
+            if box_class == 0 and float(current_ann["bbox_score"]) > bbox_thr:
                 person_results = [current_ann]
 
                 pose_results, returned_outputs = inference_top_down_pose_model(
